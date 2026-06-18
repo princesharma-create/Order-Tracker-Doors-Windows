@@ -3,1033 +3,957 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Ozone Order Tracker — Enterprise Platform</title>
-<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<title>Ozone Enterprise Platform</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  html,body,#root{height:100%;width:100%;overflow:hidden;}
-  body{font-family:system-ui,-apple-system,sans-serif;background:#F9FAFB;}
-  input,select,textarea{font-family:inherit;outline:none;}
-  button{font-family:inherit;cursor:pointer;}
-  ::-webkit-scrollbar{width:6px;height:6px;}
-  ::-webkit-scrollbar-track{background:#F3F4F6;}
-  ::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px;}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:system-ui,-apple-system,sans-serif;background:#F9FAFB;color:#111827}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+.app{display:flex;height:100vh;overflow:hidden}
+/* Sidebar */
+.sidebar{width:220px;background:#002060;color:#fff;display:flex;flex-direction:column;transition:width .2s;flex-shrink:0}
+.sidebar.collapsed{width:60px}
+.sidebar-header{padding:16px 12px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:8px;min-height:56px}
+.sidebar-logo{height:30px;filter:brightness(0) invert(1);flex-shrink:0}
+.sidebar-toggle{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.nav{flex:1;padding:10px 6px;overflow-y:auto}
+.nav-item{width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:none;background:transparent;color:rgba(255,255,255,.6);cursor:pointer;font-size:13px;text-align:left;margin-bottom:2px;white-space:nowrap;overflow:hidden}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff;font-weight:600}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.08);color:#fff}
+.nav-icon{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.nav-label{overflow:hidden;text-overflow:ellipsis}
+.sidebar-footer{padding:14px 10px;border-top:1px solid rgba(255,255,255,.1)}
+.user-name{font-size:13px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px}
+.logout-btn{width:100%;padding:7px;background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:6px;font-size:12px;cursor:pointer}
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid #E5E7EB;padding:0 20px;height:56px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:#002060;flex:1}
+.search-wrap{position:relative;width:300px}
+.search-wrap input{width:100%;padding:8px 10px 8px 32px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9CA3AF;font-size:13px}
+.avatar{width:32px;height:32px;border-radius:50%;background:#002060;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.filterbar{background:#F8FAFF;border-bottom:1px solid #E5E7EB;padding:7px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.filterbar select{padding:5px 8px;border:1.5px solid #E5E7EB;border-radius:6px;font-size:12px;color:#002060;background:#fff;cursor:pointer}
+.clear-btn{padding:5px 10px;border:1.5px solid #FCA5A5;border-radius:6px;font-size:12px;color:#DC2626;background:#FFF0F0;cursor:pointer}
+.filter-label{font-size:11px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px}
+/* Page */
+.page{flex:1;overflow-y:auto;padding:20px}
+/* KPI Grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:20px}
+.kpi-card{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px}
+.kpi-label{font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.kpi-row{display:flex;justify-content:space-between;align-items:flex-start}
+.kpi-value{font-size:22px;font-weight:700;color:#002060;line-height:1}
+.kpi-icon{font-size:18px;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#EEF3FF}
+.kpi-sub{font-size:11px;color:#9CA3AF;margin-top:4px}
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.chart-card{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:16px}
+.chart-title{font-size:13px;font-weight:700;color:#002060;margin-bottom:12px}
+.charts-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+/* Table */
+.table-wrap{background:#fff;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden}
+.table-header{padding:12px 16px;border-bottom:1px solid #F3F4F6;display:flex;justify-content:space-between;align-items:center}
+.table-title{font-size:13px;font-weight:700;color:#002060}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:#F8FAFF}
+thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+tbody tr:nth-child(even){background:#FAFAFA}
+tbody td{padding:9px 12px;border-bottom:1px solid #F3F4F6;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.table-footer{padding:10px 16px;border-top:1px solid #F3F4F6;background:#FAFAFA;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#6B7280}
+.pg-btn{padding:5px 10px;border:1px solid #E5E7EB;border-radius:6px;background:#fff;font-size:12px;cursor:pointer}
+.pg-btn.active{background:#002060;color:#fff;border-color:#002060}
+/* Badges */
+.badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;display:inline-block}
+.badge-green{background:#ECFDF5;color:#065F46}
+.badge-red{background:#FEF2F2;color:#991B1B}
+.badge-blue{background:#EFF6FF;color:#1D4ED8}
+.badge-amber{background:#FFFBEB;color:#92400E}
+.badge-purple{background:#F5F3FF;color:#5B21B6}
+.badge-cyan{background:#E0F2FE;color:#0C4A6E}
+.badge-gray{background:#F3F4F6;color:#374151}
+/* Login */
+.login-bg{min-height:100vh;background:linear-gradient(135deg,#002060 0%,#1a3a7a 60%,#0d2050 100%);display:flex;align-items:center;justify-content:center}
+.login-card{width:420px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.4)}
+.login-top{background:#002060;padding:30px 30px 22px;text-align:center}
+.login-logo{height:48px;filter:brightness(0) invert(1);margin-bottom:14px}
+.login-subtitle{color:#fff;font-size:12px;letter-spacing:3px;text-transform:uppercase;opacity:.65}
+.login-body{padding:30px}
+.login-heading{font-size:22px;font-weight:700;color:#002060;margin-bottom:4px}
+.login-desc{font-size:13px;color:#6B7280;margin-bottom:26px}
+.field-label{font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.field-input{width:100%;padding:10px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:14px;margin-bottom:14px}
+.field-input:focus{border-color:#002060}
+.login-btn{width:100%;padding:12px;background:#002060;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
+.login-btn:hover{background:#003090}
+.login-hint{margin-top:18px;padding:12px;background:#F8FAFF;border-radius:8px;font-size:12px;color:#555}
+.err-msg{background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:9px 12px;font-size:13px;color:#DC2626;margin-bottom:14px}
+/* Funnel */
+.funnel-wrap{max-width:680px;margin:0 auto}
+.funnel-stage{display:flex;flex-direction:column;align-items:center;margin-bottom:3px}
+.funnel-bar{border-radius:8px;padding:12px 20px;color:#fff;display:flex;align-items:center;gap:12px;width:100%}
+.funnel-connector{width:2px;height:10px;background:#E5E7EB}
+/* Analytics */
+.progress-row{margin-bottom:10px}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.progress-bg{height:6px;background:#F3F4F6;border-radius:4px}
+.progress-fill{height:100%;border-radius:4px}
+/* Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.form-section{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px}
+.section-title{font-size:11px;font-weight:700;color:#002060;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #002060;padding-bottom:8px;margin-bottom:14px}
+.form-field{margin-bottom:12px}
+.form-field label{font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.form-field input,.form-field select,.form-field textarea{width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:#002060;outline:none}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.btn-primary{padding:10px 28px;background:#002060;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-secondary{padding:10px 20px;border:1.5px solid #E5E7EB;background:#fff;border-radius:8px;font-size:13px;cursor:pointer}
+.success-msg{background:#ECFDF5;border:1px solid #6EE7B7;border-radius:10px;padding:12px 16px;color:#065F46;font-weight:600;font-size:14px;margin-bottom:16px}
+/* Settings tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid #E5E7EB;margin-bottom:18px}
+.tab{padding:8px 16px;border:none;border-bottom:2px solid transparent;background:transparent;font-size:13px;cursor:pointer;color:#6B7280}
+.tab.active{border-bottom-color:#002060;color:#002060;font-weight:700}
+/* Misc */
+.stat-chip{background:#F8FAFF;border-radius:6px;padding:8px 10px}
+.stat-chip-label{font-size:10px;color:#9CA3AF;margin-bottom:2px}
+.stat-chip-val{font-size:16px;font-weight:700;color:#002060}
+.live-badge{font-size:12px;background:#ECFDF5;color:#065F46;padding:3px 12px;border-radius:20px;font-weight:600}
+.export-btn{padding:6px 14px;background:#002060;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer}
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect, useMemo, useRef } = React;
+<div id="app"></div>
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Ccircle cx='30' cy='30' r='22' fill='%23C9A227'/%3E%3Ccircle cx='30' cy='30' r='14' fill='%23002060'/%3E%3Ctext x='62' y='42' font-family='Arial Black,sans-serif' font-size='32' font-weight='900' fill='%23002060'%3EOZONE%3C/text%3E%3C/svg%3E";
+const NAVY="#002060",GOLD="#C9A227";
+const ZONES=["North","South","East","West","Central"];
+const ZMS={North:"Rajesh Kumar",South:"Priya Menon",East:"Amit Das",West:"Sunita Patil",Central:"Vikram Singh"};
+const PRODUCTS=["Aluminium Doors & Windows","UPVC Windows"];
+const PARTNERS=["BuildMart Delhi","GlassTech Mumbai","WindowWorld Pune","FencoIndia Hyderabad","ArchiGlass Kolkata","ProBuild Chennai","AlumFab Bangalore","VisionGlass Ahmedabad"];
+const SALESPERSONS=["Ankit Sharma","Deepa Nair","Rohit Verma","Kavita Joshi","Suresh Pillai","Meena Iyer","Rahul Gupta","Sneha Reddy"];
+const STATUSES=["Done","Done","Done","Survey","Production","Dispatch","Installation","Pending","Quotation Sent"];
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const CUSTOMERS=["Prestige Builders","Sobha Developers","DLF Homes","Godrej Properties","Puravankara Projects","Brigade Group","Mahindra Lifespace","Tata Housing","Lodha Group","Shapoorji Pallonji"];
  
+function seed(i){let x=Math.sin(i+1)*10000;return x-Math.floor(x);}
+const ALL_DATA=Array.from({length:120},(_,i)=>{
+  const zone=ZONES[i%5];
+  const prod=PRODUCTS[i%2];
+  const stat=STATUSES[Math.floor(seed(i*3)*STATUSES.length)];
+  const bv=Math.round((seed(i*7)*25+2)*100)/100;
+  const mi=Math.floor(seed(i*11)*12);
+  const d=new Date(2024,mi,Math.floor(seed(i*13)*27)+1);
+  return{sno:i+1,zm:ZMS[zone],rsm:"RSM-"+zone,month:MONTHS[mi],quarter:"Q"+Math.ceil((mi+1)/3),year:2024,
+    status:stat,product:prod,zone,salesPerson:SALESPERSONS[i%8],partner:PARTNERS[i%8],
+    customer:CUSTOMERS[i%10],totalQty:Math.floor(seed(i*17)*18)+2,basicOrderValue:bv,
+    totalOrderValue:Math.round(bv*1.18*100)/100,
+    quotationNumber:"QT-2024-"+String(i+1).padStart(4,"0"),
+    invoiceNo:stat==="Done"?"INV-2024-"+String(i+1).padStart(4,"0"):"",
+    dateOfOrder:d.toLocaleDateString("en-IN"),
+    advPct:30,survPct:20,despPct:50,location:"City-"+((i%10)+1),
+    category:prod==="Aluminium Doors & Windows"?"Premium":"Standard"};
+});
  
-const LOGO_B64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCACDAYIDASIAAhEBAxEB/8QAHgABAAICAwEBAQAAAAAAAAAAAAgJBQcEBgoDAQL/xABaEAABAwMDAgMCBgsIDwUJAAABAgMEAAUGBxESCCEJEzEiQRQVMlFhcRYXOEJScnaBkaG0GSM3V2KVs9IYJCU0NlNWdYKSlqKxtdMzc5TBxEVUY4OEk7Lw8f/EABsBAQACAwEBAAAAAAAAAAAAAAAFBgMEBwEC/8QAPxEAAQMDAAUKAwcDBAIDAAAAAQACAwQFEQYhMUFREiJhcYGRobHB0RMU4SMyNDVyovAzsuIWQlLxFSRTY4L/2gAMAwEAAhEDEQA/ALU6UpREpSlESlKURKUr8UpKEla1BKUjcknYAURftYnJ8sxfCbO9kOY5HbbHbGNg5MuEpEdlJPoCtZA3PuHqa0BrF1F6xTXZGI9Lmit8y25p9hzJbjCVFsrW/wD7s6+ppEtQ2PtpWGhuk8nO6aihkHQt1ua5XZGV6tZdYzcVbkC+XxbhjJVtyQ01FacZaHYHi3xSSPz1L0lsZIA+qlbG3hnLu7d29yjKqvkj5lNEXu7h3+ykZqD4mvTziT7kHFGb/mUhHJPm2+II8UKHuLsgoUQfcpCFg+oO22+j754suaSFKGN6M2SAnf2TOu7ss7fOQhtr9H/9r5wPCbzx1sG56x2GMv3pYtTz4H51OI/4V95fhMZe20TA1ss77m3ZL1jdaST9YeV/wqbhj0ei1Odyj08r0AChJpL/AC62tDR0cn1JXX4nisa2If5TtPcIeZ3+Q03LaVt+MXlD9VbCw/xZbQ68lnUHRqdEZG3KTZLoiSs/Psy8hoD/AO4a0jmfhqdTOLsOy7NCxzKm0ElLdpufB8o+cokoaTvt34pUo/NuajVlGJ5RhF6exzMscudjujA5OQ7jFXHeCSSAoJWASk7HZQ3B9xNSkdts1cMQgE9BOe7PooyS43mh1zZx0gY7/qrsdHup/RDXX+1tPs4iv3QJK12iWDFnpAG6iGXNlOJAI3W3yQPwq2rXnojSZMKUxOhSHY8mM4l5h9lZQ024g7pWhQ7pUCAQQdwRVjnQ311XrLr1b9FNa7mJdzl/vFhyB4hLkpwD2Ysk+inCBsh3sVkBKt1qClwd10bdSsM1MeU0bQdo6elTdr0iZVvENQOS47DuPsp90pSqqrMlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUrjz7hAtUJ65XSdHhxI6C48/IdS226kepUpRAA+k1onL+u/pWw2QqHJ1Vh3WQNyE2WM/cEH6nmUKZ/36zQ081QcRMLuoErFLPFAMyuA6zhb+pUTB4nHTKZHklWWBH+O+KBw/R5nL9Vd6w3rn6WM2eESFqzb7ZIIBLd7ZetqRv6DzZCUtE/Us1sPtlZGOU6J2OorAy4Ukhw2VpPWFvmlfKLLizozUyDJakR3khbTrSwtC0n0KVDsR9Ir61orcSulasaN6c63Yw5ieo+NR7pE7qjvEcZEN0jbzWHR7Ta/TuDsR2UCkkHutK+mPdG4PYcEb18vY17S1wyCqR+qLprybppz4Y7cZC7jYbolyRYrqUcfhTKSAttwDsl5vkkLA7EKQobBXEagjSZUKSzNgyno0mO4l5h9lZQ024g7pWhQ7pUCAQQdwRVjnQ311XrLr1b9FNa7mJdzl/vFhyB4hLkpwD2Ysk+inCBsh3sVkBKt1qClwd10bdSsM1MeU0bQdo6elTdr0iZVvENQOS47DuPsp90pSqqrMlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUrjz7hAtUJ65XSdHhxI6C48/IdS226kepUpRAA+k1onL+u/pWw2QqHJ1Vh3WQNyE2WM/cEH6nmUKZ/36zQ081QcRMLuoErFLPFAMyuA6zhb+pUTB4nHTKZHklWWBH+O+KBw/R5nL9Vd6w3rn6WM2eESFqzb7ZIIBLd7ZetqRv6DzZCUtE/Us1sPtlZGOU6J2OorAy4Ukhw2VpPWFvmlfKLLizozUyDJakR3khbTrSwtC0n0KVDsR9Ir61orcSulasaN6c63Yw5ieo+NR7pE7qjvEcZEN0jbzWHR7Ta/TuDsR2UCkkHutK+mPdG4PYcEb18vY17S1wyCqR+qLprybppz4Y7cZC7jYbolyRYrqUcfhTKSAttwDsl5vkkLA7EKQobBXEagjSZUKSzNgyno0mO4l5h9lZQ024g7pWhQ7pUCAQQdwRVjnQ311XrLr1b9FNa7mJdzl/vFhyB4hLkpwD2Ysk+inCBsh3sVkBKt1qClwd10bdSsM1MeU0bQdo6elTdr0iZVvENQOS47DuPsp90pSqqrMlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUrjz7hAtUJ65XSdHhxI6C48/IdS226kepUpRAA+k1onL+u/pWw2QqHJ1Vh3WQNyE2WM/cEH6nmUKZ/36zQ081QcRMLuoErFLPFAMyuA6zhb+pUTB4nHTKZHklWWBH+O+KBw/R5nL9Vd6w3rn6WM2eESFqzb7ZIIBLd7ZetqRv6DzZCUtE/Us1sPtlZGOU6J2OorAy4Ukhw2VpPWFvmlfKLLizozUyDJakR3khbTrSwtC0n0KVDsR9Ir61orcSulasaN6c63Yw5ieo+NR7pE7qjvEcZEN0jbzWHR7Ta/TuDsR2UCkkHutK+mPdG4PYcEb18vY17S1wyCqR+qLprybppz4Y7cZC7jYbolyRYrqUcfhTKSAttwDsl5vkkLA7EKQobBXEagjSZUKSzNgyno0mO4l5h9lZQ024g7pWhQ7pUCAQQdwRVjnQ311XrLr1b9FNa7mJdzl/vFhyB4hLkpwD2Ysk+inCBsh3sVkBKt1qClwd10bdSsM1MeU0bQdo6elTdr0iZVvENQOS47DuPsp90pSqqrMlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIv/Z";
+// ── HELPERS ───────────────────────────────────────────────────────────────
+const fmt=n=>n>=1?"₹"+n.toFixed(1)+"L":"₹"+(n*100).toFixed(0)+"K";
+const pct=(a,b)=>b===0?0:Math.round(a/b*100);
+const uniq=(arr,k)=>[...new Set(arr.map(r=>r[k]))];
  
-const OZONE_NAVY = "#002060";
-const OZONE_GOLD = "#C9A227";
-const OZONE_LIGHT = "#EEF3FF";
+// ── STATE ─────────────────────────────────────────────────────────────────
+let STATE={
+  user:null,page:"dashboard",collapsed:false,
+  search:"",
+  filters:{zone:"All",product:"All",status:"All",month:"All"},
+  orderPage:1,
+  punchSubmitted:false,
+  settingsTab:"datasource",
+  formData:{}
+};
+function setState(patch){Object.assign(STATE,patch);render();}
  
-// ─── Synthetic demo data (mimics the 94-column schema) ───
-function generateDemoData() {
-  const zones = ["North", "South", "East", "West", "Central"];
-  const zms = { North: "Rajesh Kumar", South: "Priya Menon", East: "Amit Das", West: "Sunita Patil", Central: "Vikram Singh" };
-  const products = ["Aluminium Doors & Windows", "UPVC Windows"];
-  const partners = ["BuildMart Delhi", "GlassTech Mumbai", "WindowWorld Pune", "FencoIndia Hyderabad", "ArchiGlass Kolkata", "ProBuild Chennai", "AlumFab Bangalore", "VisionGlass Ahmedabad"];
-  const salesPersons = ["Ankit Sharma", "Deepa Nair", "Rohit Verma", "Kavita Joshi", "Suresh Pillai", "Meena Iyer", "Rahul Gupta", "Sneha Reddy"];
-  const statuses = ["Done", "Done", "Done", "Survey", "Production", "Dispatch", "Installation", "Pending", "Quotation Sent"];
-  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const customers = ["Prestige Builders", "Sobha Developers", "DLF Homes", "Godrej Properties", "Puravankara Projects", "Brigade Group", "Mahindra Lifespace", "Tata Housing", "Lodha Group", "Shapoorji Pallonji"];
- 
-  return Array.from({ length: 120 }, (_, i) => {
-    const zone = zones[i % zones.length];
-    const product = products[i % 2];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const basicVal = Math.round((Math.random() * 25 + 2) * 100) / 100;
-    const month = months[Math.floor(Math.random() * 12)];
-    const dateOfOrder = new Date(2024, months.indexOf(month), Math.floor(Math.random() * 28) + 1);
-    return {
-      sno: i + 1,
-      zm: zms[zone],
-      rsm: `RSM-${zone}`,
-      month,
-      quarter: `Q${Math.ceil((months.indexOf(month) + 1) / 3)}`,
-      year: 2024,
-      status,
-      product,
-      zone,
-      salesPerson: salesPersons[i % salesPersons.length],
-      partner: partners[i % partners.length],
-      customer: customers[i % customers.length],
-      totalQty: Math.floor(Math.random() * 20) + 2,
-      basicOrderValue: basicVal,
-      totalOrderValue: Math.round(basicVal * 1.18 * 100) / 100,
-      quotationNumber: `QT-2024-${String(i + 1).padStart(4, "0")}`,
-      invoiceNo: status === "Done" ? `INV-2024-${String(i + 1).padStart(4, "0")}` : "",
-      dateOfOrder,
-      advancePercent: 30,
-      surveyPercent: 20,
-      despatchPercent: 50,
-      location: `City-${(i % 10) + 1}`,
-      category: product === "Aluminium Doors & Windows" ? "Premium" : "Standard",
-    };
-  });
+function filteredData(){
+  let d=ALL_DATA;
+  const f=STATE.filters;
+  if(f.zone!=="All") d=d.filter(r=>r.zone===f.zone);
+  if(f.product!=="All") d=d.filter(r=>r.product===f.product);
+  if(f.status!=="All") d=d.filter(r=>r.status===f.status);
+  if(f.month!=="All") d=d.filter(r=>r.month===f.month);
+  if(STATE.search){
+    const q=STATE.search.toLowerCase();
+    d=d.filter(r=>r.quotationNumber.toLowerCase().includes(q)||r.customer.toLowerCase().includes(q)||
+      r.partner.toLowerCase().includes(q)||r.salesPerson.toLowerCase().includes(q)||
+      r.zone.toLowerCase().includes(q)||r.product.toLowerCase().includes(q));
+  }
+  return d;
 }
  
-const ALL_DATA = generateDemoData();
+// ── RENDER ENGINE ─────────────────────────────────────────────────────────
+function h(tag,attrs,...children){
+  const el=document.createElement(tag);
+  if(attrs) Object.entries(attrs).forEach(([k,v])=>{
+    if(k==="class") el.className=v;
+    else if(k==="style"&&typeof v==="object") Object.assign(el.style,v);
+    else if(k.startsWith("on")) el.addEventListener(k.slice(2).toLowerCase(),v);
+    else el.setAttribute(k,v);
+  });
+  children.flat(Infinity).forEach(c=>{
+    if(c==null||c===false) return;
+    el.appendChild(typeof c==="string"||typeof c==="number"?document.createTextNode(c):c);
+  });
+  return el;
+}
  
-// ─── Helpers ───
-const fmt = (n) => n >= 1 ? `₹${n.toFixed(1)}L` : `₹${(n * 100).toFixed(0)}K`;
-const fmtFull = (n) => `₹${n.toFixed(2)} Lakhs`;
-const pct = (a, b) => b === 0 ? 0 : Math.round((a / b) * 100);
- 
-// ─── Auth ───
-function LoginScreen({ onLogin }) {
-  const [user, setUser] = useState("");
-  const [pass, setPass] = useState("");
-  const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(false);
- 
-  const submit = () => {
-    if (!user || !pass) { setErr("Please enter credentials."); return; }
-    setLoading(true);
-    setTimeout(() => {
-      if (user === "admin" && pass === "ozone123") onLogin({ name: "Admin User", role: "Administrator" });
-      else if (user === "sales" && pass === "ozone123") onLogin({ name: "Sales Manager", role: "Sales" });
-      else if (user === "ops" && pass === "ozone123") onLogin({ name: "Operations Head", role: "Operations" });
-      else { setErr("Invalid credentials. Try admin/ozone123"); setLoading(false); }
-    }, 800);
-  };
- 
-  return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${OZONE_NAVY} 0%, #1a3a7a 60%, #0d2050 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui,sans-serif" }}>
-      <div style={{ width: 420, background: "#fff", borderRadius: 16, boxShadow: "0 32px 80px rgba(0,0,0,0.4)", overflow: "hidden" }}>
-        <div style={{ background: OZONE_NAVY, padding: "32px 32px 24px", textAlign: "center" }}>
-          <img src={`data:image/jpeg;base64,${LOGO_B64}`} alt="Ozone" style={{ height: 52, marginBottom: 16, filter: "brightness(0) invert(1)" }} />
-          <div style={{ color: "#fff", fontSize: 13, letterSpacing: 3, textTransform: "uppercase", opacity: 0.7 }}>Enterprise Platform</div>
-        </div>
-        <div style={{ padding: "32px" }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: OZONE_NAVY, marginBottom: 6 }}>Welcome back</div>
-          <div style={{ fontSize: 13, color: "#666", marginBottom: 28 }}>Order Tracker & Business Intelligence</div>
-          {err && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#DC2626", marginBottom: 16 }}>{err}</div>}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>USERNAME</label>
-            <input value={user} onChange={e => setUser(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="admin / sales / ops" style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-          </div>
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>PASSWORD</label>
-            <input type="password" value={pass} onChange={e => setPass(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="ozone123" style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-          </div>
-          <button onClick={submit} disabled={loading} style={{ width: "100%", padding: "12px", background: loading ? "#6B7280" : OZONE_NAVY, color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
-            {loading ? "Signing in…" : "Sign In →"}
-          </button>
-          <div style={{ marginTop: 20, padding: "14px", background: "#F8FAFF", borderRadius: 8, fontSize: 12, color: "#555" }}>
-            <strong>Demo accounts:</strong><br />
-            admin / ozone123 · sales / ozone123 · ops / ozone123
-          </div>
-        </div>
-      </div>
-    </div>
+// ── LOGIN ─────────────────────────────────────────────────────────────────
+function renderLogin(){
+  let user="",pass="",errEl=h("div",{class:"err-msg",style:{display:"none"}},"");
+  const userInp=h("input",{class:"field-input",type:"text",placeholder:"admin / sales / ops"});
+  const passInp=h("input",{class:"field-input",type:"password",placeholder:"ozone123"});
+  userInp.addEventListener("input",e=>user=e.target.value);
+  passInp.addEventListener("input",e=>pass=e.target.value);
+  function doLogin(){
+    if(!user||!pass){errEl.textContent="Please enter credentials.";errEl.style.display="block";return;}
+    const map={admin:{name:"Admin User",role:"Administrator"},sales:{name:"Sales Manager",role:"Sales"},ops:{name:"Operations Head",role:"Operations"}};
+    if(map[user]&&pass==="ozone123"){
+      errEl.style.display="none";
+      setState({user:map[user],page:"dashboard"});
+    }else{errEl.textContent="Invalid credentials. Try admin/ozone123";errEl.style.display="block";}
+  }
+  passInp.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+  return h("div",{class:"login-bg"},
+    h("div",{class:"login-card"},
+      h("div",{class:"login-top"},
+        h("img",{class:"login-logo",src:LOGO,alt:"Ozone"}),
+        h("div",{class:"login-subtitle"},"Enterprise Platform")
+      ),
+      h("div",{class:"login-body"},
+        h("div",{class:"login-heading"},"Welcome back"),
+        h("div",{class:"login-desc"},"Order Tracker & Business Intelligence"),
+        errEl,
+        h("label",{class:"field-label"},"USERNAME"),userInp,
+        h("label",{class:"field-label"},"PASSWORD"),passInp,
+        h("button",{class:"login-btn",onclick:doLogin},"Sign In →"),
+        h("div",{class:"login-hint"},h("strong",{},"Demo accounts:")," admin · sales · ops (password: ozone123)")
+      )
+    )
   );
 }
  
-// ─── Sidebar ───
-const NAV = [
-  { id: "dashboard", icon: "⊞", label: "Executive Dashboard" },
-  { id: "orders", icon: "📋", label: "Order Management" },
-  { id: "funnel", icon: "△", label: "Sales Funnel" },
-  { id: "analytics", icon: "📊", label: "Analytics" },
-  { id: "partners", icon: "🤝", label: "Partner Performance" },
-  { id: "payments", icon: "₹", label: "Payment Tracker" },
-  { id: "punch", icon: "+", label: "Order Punch" },
-  { id: "settings", icon: "⚙", label: "Settings & Admin" },
+// ── SIDEBAR ───────────────────────────────────────────────────────────────
+const NAV=[
+  {id:"dashboard",icon:"⊞",label:"Executive Dashboard"},
+  {id:"orders",icon:"📋",label:"Order Management"},
+  {id:"funnel",icon:"△",label:"Sales Funnel"},
+  {id:"analytics",icon:"📊",label:"Analytics"},
+  {id:"partners",icon:"🤝",label:"Partner Performance"},
+  {id:"payments",icon:"₹",label:"Payment Tracker"},
+  {id:"punch",icon:"+",label:"Order Punch"},
+  {id:"settings",icon:"⚙",label:"Settings & Admin"},
 ];
+const TITLES={dashboard:"Executive Dashboard",orders:"Order Management",funnel:"Sales Funnel",analytics:"Analytics",partners:"Partner Performance",payments:"Payment Tracker",punch:"New Order",settings:"Settings & Admin"};
  
-function Sidebar({ active, onNav, user, onLogout, collapsed, setCollapsed }) {
-  return (
-    <div style={{ width: collapsed ? 64 : 220, background: OZONE_NAVY, color: "#fff", display: "flex", flexDirection: "column", transition: "width .2s", flexShrink: 0, fontFamily: "system-ui,sans-serif" }}>
-      <div style={{ padding: collapsed ? "20px 12px" : "20px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 10 }}>
-        {!collapsed && <img src={`data:image/jpeg;base64,${LOGO_B64}`} alt="Ozone" style={{ height: 32, filter: "brightness(0) invert(1)" }} />}
-        <button onClick={() => setCollapsed(!collapsed)} style={{ marginLeft: "auto", background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 6, width: 28, height: 28, cursor: "pointer", fontSize: 14 }}>
-          {collapsed ? "›" : "‹"}
-        </button>
-      </div>
-      <nav style={{ flex: 1, padding: "12px 8px", overflowY: "auto" }}>
-        {NAV.map(n => (
-          <button key={n.id} onClick={() => onNav(n.id)}
-            style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "9px 10px", borderRadius: 8, border: "none", background: active === n.id ? "rgba(255,255,255,0.15)" : "transparent", color: active === n.id ? "#fff" : "rgba(255,255,255,0.65)", cursor: "pointer", fontSize: 13, marginBottom: 2, textAlign: "left" }}>
-            <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{n.icon}</span>
-            {!collapsed && <span style={{ fontWeight: active === n.id ? 600 : 400 }}>{n.label}</span>}
-          </button>
-        ))}
-      </nav>
-      {!collapsed && (
-        <div style={{ padding: "16px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>{user.role}</div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{user.name}</div>
-          <button onClick={onLogout} style={{ width: "100%", padding: "7px", background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Sign Out</button>
-        </div>
-      )}
-    </div>
-  );
-}
- 
-// ─── Top Bar ───
-function TopBar({ page, user, search, setSearch, data }) {
-  const titles = { dashboard: "Executive Dashboard", orders: "Order Management", funnel: "Sales Funnel", analytics: "Analytics", partners: "Partner Performance", payments: "Payment Tracker", punch: "New Order", settings: "Settings & Admin" };
-  return (
-    <div style={{ background: "#fff", borderBottom: "1px solid #E5E7EB", padding: "0 24px", height: 56, display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: OZONE_NAVY }}>{titles[page]}</div>
-      </div>
-      <div style={{ position: "relative", width: 320 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#9CA3AF" }}>🔍</span>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search orders, partners, customers…" style={{ width: "100%", padding: "8px 12px 8px 34px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} />
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 34, height: 34, borderRadius: "50%", background: OZONE_NAVY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600 }}>{user.name.charAt(0)}</div>
-        <div style={{ fontSize: 12, color: "#6B7280" }}>{user.role}</div>
-      </div>
-    </div>
-  );
-}
- 
-// ─── Filter Bar ───
-function FilterBar({ filters, setFilters, data }) {
-  const zones = ["All", ...new Set(data.map(d => d.zone))];
-  const products = ["All", ...new Set(data.map(d => d.product))];
-  const statuses = ["All", ...new Set(data.map(d => d.status))];
-  const months = ["All", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const sel = (k, v) => setFilters(f => ({ ...f, [k]: v }));
-  const s = { padding: "6px 10px", border: "1.5px solid #E5E7EB", borderRadius: 6, fontSize: 12, background: "#fff", color: OZONE_NAVY, cursor: "pointer" };
-  return (
-    <div style={{ background: "#F8FAFF", borderBottom: "1px solid #E5E7EB", padding: "8px 24px", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 1 }}>Filters:</span>
-      <select style={s} value={filters.zone} onChange={e => sel("zone", e.target.value)}>{zones.map(z => <option key={z}>{z}</option>)}</select>
-      <select style={s} value={filters.product} onChange={e => sel("product", e.target.value)}>{products.map(p => <option key={p}>{p}</option>)}</select>
-      <select style={s} value={filters.status} onChange={e => sel("status", e.target.value)}>{statuses.map(s => <option key={s}>{s}</option>)}</select>
-      <select style={s} value={filters.month} onChange={e => sel("month", e.target.value)}>{months.map(m => <option key={m}>{m}</option>)}</select>
-      <button onClick={() => setFilters({ zone: "All", product: "All", status: "All", month: "All" })} style={{ ...s, background: "#FFF0F0", borderColor: "#FECACA", color: "#DC2626" }}>✕ Clear</button>
-    </div>
-  );
-}
- 
-// ─── KPI Card ───
-function KpiCard({ label, value, sub, icon, color, trend }) {
-  return (
-    <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.8 }}>{label}</div>
-        <div style={{ fontSize: 20, width: 36, height: 36, borderRadius: 8, background: color + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
-      </div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: OZONE_NAVY, lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: "#9CA3AF" }}>{sub}</div>}
-      {trend !== undefined && <div style={{ fontSize: 11, color: trend >= 0 ? "#10B981" : "#EF4444" }}>{trend >= 0 ? "▲" : "▼"} {Math.abs(trend)}% vs last period</div>}
-    </div>
-  );
-}
- 
-// ─── Executive Dashboard ───
-function Dashboard({ data }) {
-  const done = data.filter(d => d.status === "Done");
-  const pending = data.filter(d => d.status !== "Done");
-  const totalVal = data.reduce((s, d) => s + d.basicOrderValue, 0);
-  const doneVal = done.reduce((s, d) => s + d.basicOrderValue, 0);
-  const pendVal = pending.reduce((s, d) => s + d.basicOrderValue, 0);
-  const totalQty = data.reduce((s, d) => s + d.totalQty, 0);
-  const alumQty = data.filter(d => d.product === "Aluminium Doors & Windows").reduce((s, d) => s + d.totalQty, 0);
-  const upvcQty = data.filter(d => d.product === "UPVC Windows").reduce((s, d) => s + d.totalQty, 0);
- 
-  // Zone breakdown
-  const zones = [...new Set(data.map(d => d.zone))];
-  const zoneData = zones.map(z => {
-    const zd = data.filter(d => d.zone === z);
-    return { zone: z, orders: zd.length, value: zd.reduce((s, d) => s + d.basicOrderValue, 0) };
-  }).sort((a, b) => b.value - a.value);
- 
-  // Monthly trend
-  const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const monthData = monthOrder.map(m => {
-    const md = data.filter(d => d.month === m);
-    return { month: m.slice(0, 3), orders: md.length, value: md.reduce((s, d) => s + d.basicOrderValue, 0) };
-  }).filter(m => m.orders > 0);
- 
-  // Product split
-  const alumVal = data.filter(d => d.product === "Aluminium Doors & Windows").reduce((s, d) => s + d.basicOrderValue, 0);
-  const upvcVal = data.filter(d => d.product === "UPVC Windows").reduce((s, d) => s + d.basicOrderValue, 0);
- 
-  return (
-    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-      <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, color: "#6B7280" }}>Business overview based on connected data source · {data.length} active records</div>
-        </div>
-        <div style={{ fontSize: 12, background: "#ECFDF5", color: "#065F46", padding: "4px 12px", borderRadius: 20, fontWeight: 600 }}>● Live Data</div>
-      </div>
- 
-      {/* KPI Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
-        <KpiCard label="Total Orders" value={data.length} icon="📦" color="#002060" />
-        <KpiCard label="Total Window Qty" value={totalQty.toLocaleString()} icon="🪟" color="#6366F1" />
-        <KpiCard label="Total Order Value" value={fmt(totalVal)} sub={`${data.length} orders`} icon="💰" color="#0EA5E9" />
-        <KpiCard label="Completed Orders" value={done.length} sub={`${pct(done.length, data.length)}% completion`} icon="✅" color="#10B981" trend={4.2} />
-        <KpiCard label="Completed Value" value={fmt(doneVal)} icon="🏆" color="#10B981" />
-        <KpiCard label="Pending Orders" value={pending.length} sub={`${pct(pending.length, data.length)}% pending`} icon="⏳" color="#F59E0B" />
-        <KpiCard label="Pending Value" value={fmt(pendVal)} icon="⚠️" color="#F59E0B" />
-        <KpiCard label="Aluminium Qty" value={alumQty.toLocaleString()} icon="🔩" color="#8B5CF6" />
-        <KpiCard label="UPVC Qty" value={upvcQty.toLocaleString()} icon="🏠" color="#06B6D4" />
-      </div>
- 
-      {/* Charts Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-        {/* Monthly Trend */}
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Monthly Order Value (₹ Lakhs)</div>
-          <BarChart data={monthData} xKey="month" yKey="value" color={OZONE_NAVY} height={160} />
-        </div>
-        {/* Zone Performance */}
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Zone Performance</div>
-          <HBarChart data={zoneData} xKey="zone" yKey="value" color="#6366F1" height={160} />
-        </div>
-      </div>
- 
-      {/* Product Split + Status */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Product Mix</div>
-          <DonutChart data={[{ label: "Aluminium D&W", value: alumVal, color: OZONE_NAVY }, { label: "UPVC Windows", value: upvcVal, color: OZONE_GOLD }]} />
-        </div>
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Order Status Mix</div>
-          <StatusPie data={data} />
-        </div>
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 10 }}>Top Partners</div>
-          {[...new Set(data.map(d => d.partner))].slice(0, 5).map(p => {
-            const pv = data.filter(d => d.partner === p).reduce((s, d) => s + d.basicOrderValue, 0);
-            const maxPv = Math.max(...[...new Set(data.map(d => d.partner))].map(pp => data.filter(d => d.partner === pp).reduce((s, d) => s + d.basicOrderValue, 0)));
-            return (
-              <div key={p} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#374151", marginBottom: 3 }}>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>{p}</span>
-                  <span style={{ fontWeight: 600, color: OZONE_NAVY }}>{fmt(pv)}</span>
-                </div>
-                <div style={{ height: 6, background: "#F3F4F6", borderRadius: 4 }}>
-                  <div style={{ height: "100%", width: `${pct(pv, maxPv)}%`, background: OZONE_NAVY, borderRadius: 4 }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
- 
-// ─── Simple Bar Chart (SVG) ───
-function BarChart({ data, xKey, yKey, color, height = 160 }) {
-  if (!data.length) return null;
-  const maxVal = Math.max(...data.map(d => d[yKey]));
-  const barW = Math.floor(460 / data.length) - 4;
-  return (
-    <svg viewBox={`0 0 480 ${height + 30}`} style={{ width: "100%", height: height + 30 }}>
-      {data.map((d, i) => {
-        const barH = maxVal > 0 ? Math.round((d[yKey] / maxVal) * (height - 20)) : 0;
-        const x = i * (barW + 4) + 4;
-        return (
-          <g key={i}>
-            <rect x={x} y={height - barH} width={barW} height={barH} rx={3} fill={color} opacity={0.85} />
-            <text x={x + barW / 2} y={height + 16} textAnchor="middle" fontSize={9} fill="#6B7280">{d[xKey]}</text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
- 
-function HBarChart({ data, xKey, yKey, color, height = 160 }) {
-  if (!data.length) return null;
-  const maxVal = Math.max(...data.map(d => d[yKey]));
-  const rowH = Math.floor(height / data.length) - 4;
-  return (
-    <svg viewBox="0 0 480 180" style={{ width: "100%", height }}>
-      {data.map((d, i) => {
-        const barW = maxVal > 0 ? Math.round((d[yKey] / maxVal) * 300) : 0;
-        const y = i * (rowH + 6) + 4;
-        return (
-          <g key={i}>
-            <text x={0} y={y + rowH / 2 + 4} fontSize={10} fill="#374151">{d[xKey]}</text>
-            <rect x={80} y={y} width={barW} height={rowH} rx={3} fill={color} opacity={0.85} />
-            <text x={86 + barW} y={y + rowH / 2 + 4} fontSize={10} fill="#6B7280">{fmt(d[yKey])}</text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
- 
-function DonutChart({ data }) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  let startAngle = -Math.PI / 2;
-  const segments = data.map(d => {
-    const angle = (d.value / total) * 2 * Math.PI;
-    const seg = { ...d, startAngle, angle };
-    startAngle += angle;
-    return seg;
+function renderSidebar(){
+  const c=STATE.collapsed;
+  const items=NAV.map(n=>{
+    const el=h("button",{class:"nav-item"+(STATE.page===n.id?" active":""),onclick:()=>setState({page:n.id})},
+      h("span",{class:"nav-icon"},n.icon),
+      c?null:h("span",{class:"nav-label"},n.label)
+    );
+    return el;
   });
-  const arcPath = (sa, ea, r, ri) => {
-    const x1 = 60 + r * Math.cos(sa), y1 = 60 + r * Math.sin(sa);
-    const x2 = 60 + r * Math.cos(ea), y2 = 60 + r * Math.sin(ea);
-    const ix1 = 60 + ri * Math.cos(ea), iy1 = 60 + ri * Math.sin(ea);
-    const ix2 = 60 + ri * Math.cos(sa), iy2 = 60 + ri * Math.sin(sa);
-    const lg = ea - sa > Math.PI ? 1 : 0;
-    return `M${x1},${y1} A${r},${r} 0 ${lg} 1 ${x2},${y2} L${ix1},${iy1} A${ri},${ri} 0 ${lg} 0 ${ix2},${iy2} Z`;
-  };
-  return (
-    <div>
-      <svg viewBox="0 0 120 120" style={{ width: 100, display: "block", margin: "0 auto" }}>
-        {segments.map((s, i) => <path key={i} d={arcPath(s.startAngle, s.startAngle + s.angle, 52, 35)} fill={s.color} />)}
-        <text x={60} y={63} textAnchor="middle" fontSize={10} fill={OZONE_NAVY} fontWeight="600">{pct(segments[0]?.value || 0, total)}%</text>
-      </svg>
-      {data.map((d, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11, color: "#374151" }}>
-          <div style={{ width: 10, height: 10, borderRadius: 2, background: d.color }} />
-          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label}</span>
-          <span style={{ fontWeight: 600, color: OZONE_NAVY }}>{fmt(d.value)}</span>
-        </div>
-      ))}
-    </div>
+  const footer=c?null:h("div",{class:"sidebar-footer"},
+    h("div",{class:"user-name"},STATE.user.name),
+    h("div",{class:"user-role"},STATE.user.role),
+    h("button",{class:"logout-btn",onclick:()=>setState({user:null,page:"dashboard"})},"Sign Out")
+  );
+  return h("div",{class:"sidebar"+(c?" collapsed":"")},
+    h("div",{class:"sidebar-header"},
+      c?null:h("img",{class:"sidebar-logo",src:LOGO,alt:"Ozone"}),
+      h("button",{class:"sidebar-toggle",onclick:()=>setState({collapsed:!STATE.collapsed})},c?"›":"‹")
+    ),
+    h("nav",{class:"nav"},...items),
+    footer
   );
 }
  
-function StatusPie({ data }) {
-  const statusColors = { Done: "#10B981", Survey: "#3B82F6", Production: "#8B5CF6", Dispatch: "#F59E0B", Installation: "#06B6D4", Pending: "#EF4444", "Quotation Sent": "#6B7280" };
-  const counts = {};
-  data.forEach(d => { counts[d.status] = (counts[d.status] || 0) + 1; });
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const total = entries.reduce((s, [, v]) => s + v, 0);
-  return (
-    <div>
-      {entries.map(([status, count]) => (
-        <div key={status} style={{ marginBottom: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#374151", marginBottom: 3 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: statusColors[status] || "#9CA3AF", display: "inline-block" }} />
-              {status}
-            </span>
-            <span style={{ fontWeight: 600 }}>{count} ({pct(count, total)}%)</span>
-          </div>
-          <div style={{ height: 5, background: "#F3F4F6", borderRadius: 4 }}>
-            <div style={{ height: "100%", width: `${pct(count, total)}%`, background: statusColors[status] || "#9CA3AF", borderRadius: 4 }} />
-          </div>
-        </div>
-      ))}
-    </div>
+// ── TOPBAR ────────────────────────────────────────────────────────────────
+function renderTopbar(){
+  const si=h("input",{type:"text",placeholder:"Search orders, partners, customers…",value:STATE.search,style:{width:"100%",padding:"8px 10px 8px 30px",border:"1.5px solid #E5E7EB",borderRadius:"8px",fontSize:"13px"}});
+  si.value=STATE.search;
+  si.addEventListener("input",e=>setState({search:e.target.value,orderPage:1}));
+  return h("div",{class:"topbar"},
+    h("div",{class:"topbar-title"},TITLES[STATE.page]),
+    h("div",{class:"search-wrap"},
+      h("span",{class:"search-icon"},"🔍"),si
+    ),
+    h("div",{class:"avatar"},STATE.user.name.charAt(0)),
+    h("span",{style:{fontSize:"12px",color:"#6B7280"}},STATE.user.role)
   );
 }
  
-// ─── Order Management ───
-function OrderManagement({ data, search }) {
-  const [sort, setSort] = useState({ key: "sno", dir: 1 });
-  const [page, setPage] = useState(1);
-  const PER_PAGE = 15;
- 
-  const filtered = useMemo(() => {
-    let d = data;
-    if (search) {
-      const q = search.toLowerCase();
-      d = d.filter(r => r.quotationNumber?.toLowerCase().includes(q) || r.customer?.toLowerCase().includes(q) || r.partner?.toLowerCase().includes(q) || r.salesPerson?.toLowerCase().includes(q) || r.zone?.toLowerCase().includes(q) || r.product?.toLowerCase().includes(q));
-    }
-    return d.sort((a, b) => (a[sort.key] > b[sort.key] ? 1 : -1) * sort.dir);
-  }, [data, search, sort]);
- 
-  const pages = Math.ceil(filtered.length / PER_PAGE);
-  const rows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const statusColors = { Done: { bg: "#ECFDF5", text: "#065F46" }, Survey: { bg: "#EFF6FF", text: "#1D4ED8" }, Production: { bg: "#F5F3FF", text: "#5B21B6" }, Dispatch: { bg: "#FFFBEB", text: "#92400E" }, Installation: { bg: "#E0F2FE", text: "#0C4A6E" }, Pending: { bg: "#FEF2F2", text: "#991B1B" } };
- 
-  const thStyle = (k) => ({ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, textAlign: "left", cursor: "pointer", whiteSpace: "nowrap", background: "#F8FAFF", borderBottom: "1px solid #E5E7EB" });
- 
-  return (
-    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 13, color: "#6B7280" }}>Showing {filtered.length} orders</div>
-        <button style={{ padding: "7px 16px", background: OZONE_NAVY, color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>⬇ Export</button>
-      </div>
-      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-            <thead>
-              <tr>
-                {[["sno", "S.No"], ["dateOfOrder", "Date"], ["quotationNumber", "Quotation #"], ["customer", "Customer"], ["partner", "Partner"], ["product", "Product"], ["zone", "Zone"], ["salesPerson", "Sales Person"], ["totalQty", "Qty"], ["basicOrderValue", "Order Value"], ["status", "Status"]].map(([k, l]) => (
-                  <th key={k} style={thStyle(k)} onClick={() => setSort(s => ({ key: k, dir: s.key === k ? -s.dir : 1 }))}>
-                    {l} {sort.key === k ? (sort.dir === 1 ? "↑" : "↓") : ""}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => {
-                const sc = statusColors[r.status] || { bg: "#F3F4F6", text: "#374151" };
-                return (
-                  <tr key={r.sno} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAFA", borderBottom: "1px solid #F3F4F6" }}>
-                    <td style={{ padding: "9px 12px", color: "#9CA3AF" }}>{r.sno}</td>
-                    <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{r.dateOfOrder instanceof Date ? r.dateOfOrder.toLocaleDateString("en-IN") : r.dateOfOrder}</td>
-                    <td style={{ padding: "9px 12px", color: OZONE_NAVY, fontWeight: 600 }}>{r.quotationNumber}</td>
-                    <td style={{ padding: "9px 12px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.customer}</td>
-                    <td style={{ padding: "9px 12px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.partner}</td>
-                    <td style={{ padding: "9px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.product}</td>
-                    <td style={{ padding: "9px 12px" }}>{r.zone}</td>
-                    <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{r.salesPerson}</td>
-                    <td style={{ padding: "9px 12px", textAlign: "right" }}>{r.totalQty}</td>
-                    <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: OZONE_NAVY }}>{fmt(r.basicOrderValue)}</td>
-                    <td style={{ padding: "9px 12px" }}>
-                      <span style={{ background: sc.bg, color: sc.text, padding: "3px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>{r.status}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #F3F4F6", background: "#FAFAFA" }}>
-          <div style={{ fontSize: 12, color: "#6B7280" }}>Page {page} of {pages} · {filtered.length} records</div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {[1, 2, 3].map(p => (
-              <button key={p} onClick={() => setPage(p)} style={{ padding: "5px 10px", border: "1px solid #E5E7EB", borderRadius: 6, background: page === p ? OZONE_NAVY : "#fff", color: page === p ? "#fff" : "#374151", fontSize: 12, cursor: "pointer" }}>{p}</button>
-            ))}
-            {pages > 3 && <span style={{ fontSize: 12, color: "#9CA3AF", padding: "5px 4px" }}>…{pages}</span>}
-          </div>
-        </div>
-      </div>
-    </div>
+// ── FILTERBAR ─────────────────────────────────────────────────────────────
+function renderFilterbar(){
+  function sel(field,opts){
+    const el=h("select",{onchange:e=>{const f={...STATE.filters};f[field]=e.target.value;setState({filters:f,orderPage:1});}},
+      ...opts.map(o=>h("option",{value:o,selected:STATE.filters[field]===o?true:null},o))
+    );
+    return el;
+  }
+  return h("div",{class:"filterbar"},
+    h("span",{class:"filter-label"},"Filters:"),
+    sel("zone",["All",...ZONES]),
+    sel("product",["All",...PRODUCTS]),
+    sel("status",["All",...[...new Set(ALL_DATA.map(r=>r.status))]]),
+    sel("month",["All",...MONTHS]),
+    h("button",{class:"clear-btn",onclick:()=>setState({filters:{zone:"All",product:"All",status:"All",month:"All"},orderPage:1})},"✕ Clear")
   );
 }
  
-// ─── Sales Funnel ───
-function SalesFunnel({ data }) {
-  const stages = [
-    { label: "Enquiry / Quotation", statuses: ["Quotation Sent", "Pending"], icon: "📞" },
-    { label: "Commercial Approval", statuses: ["Mark as Won"], icon: "✔" },
-    { label: "Site Survey", statuses: ["Survey"], icon: "🔍" },
-    { label: "Production", statuses: ["Production"], icon: "🏭" },
-    { label: "Dispatch", statuses: ["Dispatch"], icon: "🚛" },
-    { label: "Installation", statuses: ["Installation"], icon: "🔧" },
-    { label: "Completed", statuses: ["Done"], icon: "🏆" },
-  ];
-  const total = data.length;
-  return (
-    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-      <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>End-to-end order lifecycle — from enquiry to completion</div>
-      <div style={{ maxWidth: 700, margin: "0 auto" }}>
-        {stages.map((stage, i) => {
-          const count = stage.statuses.includes("Done")
-            ? data.filter(d => d.status === "Done").length
-            : data.filter(d => stage.statuses.some(s => d.status === s || d.status?.toLowerCase().includes(s.toLowerCase()))).length;
-          const val = data.filter(d => stage.statuses.some(s => d.status === s || d.status?.toLowerCase().includes(s.toLowerCase()))).reduce((s, d) => s + d.basicOrderValue, 0);
-          const convPct = pct(count, total);
-          const width = Math.max(40, 100 - i * 8);
-          const colors = ["#002060", "#1D4ED8", "#6D28D9", "#0369A1", "#0F766E", "#15803D", "#10B981"];
-          return (
-            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 4 }}>
-              <div style={{ width: `${width}%`, background: colors[i], borderRadius: 8, padding: "12px 20px", color: "#fff", display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 20 }}>{stage.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{stage.label}</div>
-                  <div style={{ fontSize: 11, opacity: 0.8 }}>{val > 0 ? fmt(val) : "—"}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 18, fontWeight: 700 }}>{count}</div>
-                  <div style={{ fontSize: 11, opacity: 0.8 }}>{convPct}%</div>
-                </div>
-              </div>
-              {i < stages.length - 1 && (
-                <div style={{ width: 2, height: 12, background: "#E5E7EB" }} />
-              )}
-            </div>
+// ── SVG BAR CHART ─────────────────────────────────────────────────────────
+function svgBar(data,xKey,yKey,color){
+  if(!data.length) return h("div",{},"No data");
+  const W=440,H=140,PAD=4;
+  const maxV=Math.max(...data.map(d=>d[yKey]||0))||1;
+  const bw=Math.floor((W-PAD*data.length)/data.length);
+  const ns="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 "+W+" "+(H+22));
+  svg.setAttribute("style","width:100%;height:"+(H+22)+"px");
+  data.forEach((d,i)=>{
+    const bh=Math.max(2,Math.round((d[yKey]||0)/maxV*(H-10)));
+    const x=i*(bw+PAD)+2;
+    const rect=document.createElementNS(ns,"rect");
+    rect.setAttribute("x",x);rect.setAttribute("y",H-bh);
+    rect.setAttribute("width",bw);rect.setAttribute("height",bh);
+    rect.setAttribute("rx","3");rect.setAttribute("fill",color);
+    rect.setAttribute("opacity","0.85");
+    svg.appendChild(rect);
+    const txt=document.createElementNS(ns,"text");
+    txt.setAttribute("x",x+bw/2);txt.setAttribute("y",H+16);
+    txt.setAttribute("text-anchor","middle");txt.setAttribute("font-size","9");txt.setAttribute("fill","#6B7280");
+    txt.textContent=String(d[xKey]).slice(0,3);
+    svg.appendChild(txt);
+  });
+  return svg;
+}
+ 
+function svgHBar(data,xKey,yKey,color){
+  if(!data.length) return h("div",{},"No data");
+  const ns="http://www.w3.org/2000/svg";
+  const H=data.length*28+10;
+  const svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 440 "+H);
+  svg.setAttribute("style","width:100%;height:"+H+"px");
+  const maxV=Math.max(...data.map(d=>d[yKey]||0))||1;
+  data.forEach((d,i)=>{
+    const bw=Math.round((d[yKey]||0)/maxV*280);
+    const y=i*28+4;
+    const lbl=document.createElementNS(ns,"text");
+    lbl.setAttribute("x","0");lbl.setAttribute("y",y+16);
+    lbl.setAttribute("font-size","11");lbl.setAttribute("fill","#374151");
+    lbl.textContent=String(d[xKey]).slice(0,10);
+    svg.appendChild(lbl);
+    const rect=document.createElementNS(ns,"rect");
+    rect.setAttribute("x","90");rect.setAttribute("y",y);
+    rect.setAttribute("width",bw);rect.setAttribute("height","18");
+    rect.setAttribute("rx","3");rect.setAttribute("fill",color);rect.setAttribute("opacity","0.85");
+    svg.appendChild(rect);
+    const vt=document.createElementNS(ns,"text");
+    vt.setAttribute("x",String(96+bw));vt.setAttribute("y",y+13);
+    vt.setAttribute("font-size","10");vt.setAttribute("fill","#6B7280");
+    vt.textContent=fmt(d[yKey]||0);
+    svg.appendChild(vt);
+  });
+  return svg;
+}
+ 
+// ── DONUT CHART ───────────────────────────────────────────────────────────
+function donutChart(segments){
+  const total=segments.reduce((s,d)=>s+(d.value||0),0)||1;
+  const ns="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 120 120");
+  svg.setAttribute("style","width:100px;height:100px;display:block;margin:0 auto");
+  let angle=-Math.PI/2;
+  segments.forEach(seg=>{
+    const a=(seg.value||0)/total*2*Math.PI;
+    const x1=60+52*Math.cos(angle),y1=60+52*Math.sin(angle);
+    const x2=60+52*Math.cos(angle+a),y2=60+52*Math.sin(angle+a);
+    const ix1=60+36*Math.cos(angle+a),iy1=60+36*Math.sin(angle+a);
+    const ix2=60+36*Math.cos(angle),iy2=60+36*Math.sin(angle);
+    const lg=a>Math.PI?1:0;
+    const path=document.createElementNS(ns,"path");
+    path.setAttribute("d","M"+x1+","+y1+" A52,52 0 "+lg+" 1 "+x2+","+y2+" L"+ix1+","+iy1+" A36,36 0 "+lg+" 0 "+ix2+","+iy2+" Z");
+    path.setAttribute("fill",seg.color);
+    svg.appendChild(path);
+    angle+=a;
+  });
+  const pctTxt=document.createElementNS(ns,"text");
+  pctTxt.setAttribute("x","60");pctTxt.setAttribute("y","65");
+  pctTxt.setAttribute("text-anchor","middle");pctTxt.setAttribute("font-size","11");
+  pctTxt.setAttribute("fill",NAVY);pctTxt.setAttribute("font-weight","600");
+  pctTxt.textContent=pct(segments[0]?.value||0,total)+"%";
+  svg.appendChild(pctTxt);
+  return svg;
+}
+ 
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const data=filteredData();
+  const done=data.filter(d=>d.status==="Done");
+  const pending=data.filter(d=>d.status!=="Done");
+  const totalVal=data.reduce((s,d)=>s+d.basicOrderValue,0);
+  const doneVal=done.reduce((s,d)=>s+d.basicOrderValue,0);
+  const pendVal=pending.reduce((s,d)=>s+d.basicOrderValue,0);
+  const totalQty=data.reduce((s,d)=>s+d.totalQty,0);
+  const alumQty=data.filter(d=>d.product===PRODUCTS[0]).reduce((s,d)=>s+d.totalQty,0);
+  const upvcQty=data.filter(d=>d.product===PRODUCTS[1]).reduce((s,d)=>s+d.totalQty,0);
+ 
+  function kpi(label,value,icon,sub){
+    return h("div",{class:"kpi-card"},
+      h("div",{class:"kpi-label"},label),
+      h("div",{class:"kpi-row"},
+        h("div",{},h("div",{class:"kpi-value"},value),sub?h("div",{class:"kpi-sub"},sub):null),
+        h("div",{class:"kpi-icon"},icon)
+      )
+    );
+  }
+ 
+  // monthly
+  const mdata=MONTHS.map(m=>{const md=data.filter(d=>d.month===m);return{month:m,value:md.reduce((s,d)=>s+d.basicOrderValue,0)};}).filter(m=>m.value>0);
+  // zone
+  const zdata=ZONES.map(z=>{const zd=data.filter(d=>d.zone===z);return{zone:z,value:zd.reduce((s,d)=>s+d.basicOrderValue,0)};}).sort((a,b)=>b.value-a.value);
+  // product donut
+  const alumVal=data.filter(d=>d.product===PRODUCTS[0]).reduce((s,d)=>s+d.basicOrderValue,0);
+  const upvcVal=data.filter(d=>d.product===PRODUCTS[1]).reduce((s,d)=>s+d.basicOrderValue,0);
+  // status
+  const stcounts={};data.forEach(d=>{stcounts[d.status]=(stcounts[d.status]||0)+1;});
+  const stEntries=Object.entries(stcounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const stColors={Done:"#10B981",Survey:"#3B82F6",Production:"#8B5CF6",Dispatch:"#F59E0B",Installation:"#06B6D4",Pending:"#EF4444","Quotation Sent":"#6B7280"};
+  // top partners
+  const partnerMap={};data.forEach(d=>{partnerMap[d.partner]=(partnerMap[d.partner]||0)+d.basicOrderValue;});
+  const topPartners=Object.entries(partnerMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxPV=topPartners[0]?.[1]||1;
+ 
+  return h("div",{class:"page"},
+    h("div",{style:{display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px"}},
+      h("div",{style:{flex:"1",fontSize:"13px",color:"#6B7280"}},"Business overview · "+data.length+" active records"),
+      h("span",{class:"live-badge"},"● Live Data")
+    ),
+    // KPIs
+    h("div",{class:"kpi-grid"},
+      kpi("Total Orders",data.length,"📦"),
+      kpi("Total Window Qty",totalQty.toLocaleString(),"🪟"),
+      kpi("Total Order Value",fmt(totalVal),"💰",data.length+" orders"),
+      kpi("Completed Orders",done.length,"✅",pct(done.length,data.length)+"% rate"),
+      kpi("Completed Value",fmt(doneVal),"🏆"),
+      kpi("Pending Orders",pending.length,"⏳",pct(pending.length,data.length)+"% pending"),
+      kpi("Pending Value",fmt(pendVal),"⚠️"),
+      kpi("Aluminium Qty",alumQty.toLocaleString(),"🔩"),
+      kpi("UPVC Qty",upvcQty.toLocaleString(),"🏠")
+    ),
+    // Charts row 1
+    h("div",{class:"charts-row"},
+      h("div",{class:"chart-card"},h("div",{class:"chart-title"},"Monthly Order Value (₹ Lakhs)"),svgBar(mdata,"month","value",NAVY)),
+      h("div",{class:"chart-card"},h("div",{class:"chart-title"},"Zone Performance"),svgHBar(zdata,"zone","value","#6366F1"))
+    ),
+    // Charts row 2
+    h("div",{class:"charts-row3"},
+      h("div",{class:"chart-card"},
+        h("div",{class:"chart-title"},"Product Mix"),
+        donutChart([{label:"Aluminium D&W",value:alumVal,color:NAVY},{label:"UPVC Windows",value:upvcVal,color:GOLD}]),
+        h("div",{style:{marginTop:"10px"}},
+          [{label:"Aluminium D&W",value:alumVal,color:NAVY},{label:"UPVC Windows",value:upvcVal,color:GOLD}].map(d=>
+            h("div",{style:{display:"flex",alignItems:"center",gap:"6px",fontSize:"11px",color:"#374151",marginTop:"5px"}},
+              h("div",{style:{width:"10px",height:"10px",borderRadius:"2px",background:d.color}}),
+              h("span",{style:{flex:"1"}},d.label),
+              h("span",{style:{fontWeight:"600",color:NAVY}},fmt(d.value))
+            )
+          )
+        )
+      ),
+      h("div",{class:"chart-card"},
+        h("div",{class:"chart-title"},"Order Status"),
+        ...stEntries.map(([st,cnt])=>{
+          const p=pct(cnt,data.length);
+          return h("div",{class:"progress-row"},
+            h("div",{class:"progress-label"},
+              h("span",{style:{display:"flex",alignItems:"center",gap:"5px"}},
+                h("span",{style:{width:"8px",height:"8px",borderRadius:"50%",background:stColors[st]||"#9CA3AF",display:"inline-block"}}),st
+              ),
+              h("span",{style:{fontWeight:"600"}},cnt+" ("+p+"%)")
+            ),
+            h("div",{class:"progress-bg"},h("div",{class:"progress-fill",style:{width:p+"%",background:stColors[st]||"#9CA3AF"}}))
           );
-        })}
-      </div>
-    </div>
+        })
+      ),
+      h("div",{class:"chart-card"},
+        h("div",{class:"chart-title"},"Top Partners"),
+        ...topPartners.map(([p,v])=>
+          h("div",{style:{marginBottom:"10px"}},
+            h("div",{style:{display:"flex",justifyContent:"space-between",fontSize:"11px",color:"#374151",marginBottom:"3px"}},
+              h("span",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"120px"}},p),
+              h("span",{style:{fontWeight:"600",color:NAVY}},fmt(v))
+            ),
+            h("div",{class:"progress-bg"},h("div",{class:"progress-fill",style:{width:pct(v,maxPV)+"%",background:NAVY}}))
+          )
+        )
+      )
+    )
   );
 }
  
-// ─── Analytics ───
-function Analytics({ data }) {
-  const zones = [...new Set(data.map(d => d.zone))];
-  const salesPersons = [...new Set(data.map(d => d.salesPerson))];
- 
-  const zoneAnalytics = zones.map(z => {
-    const zd = data.filter(d => d.zone === z);
-    const done = zd.filter(d => d.status === "Done");
-    return { zone: z, orders: zd.length, done: done.length, value: zd.reduce((s, d) => s + d.basicOrderValue, 0), qty: zd.reduce((s, d) => s + d.totalQty, 0) };
-  });
- 
-  const spAnalytics = salesPersons.map(sp => {
-    const spd = data.filter(d => d.salesPerson === sp);
-    const done = spd.filter(d => d.status === "Done");
-    return { sp, orders: spd.length, done: done.length, value: spd.reduce((s, d) => s + d.basicOrderValue, 0) };
-  }).sort((a, b) => b.value - a.value);
- 
-  return (
-    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-        {/* Zone Analytics */}
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Zone-wise Performance</div>
-          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#F8FAFF" }}>
-                {["Zone", "Orders", "Done", "Conv%", "Value"].map(h => <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {zoneAnalytics.map((z, i) => (
-                <tr key={z.zone} style={{ borderBottom: "1px solid #F3F4F6", background: i % 2 ? "#FAFAFA" : "#fff" }}>
-                  <td style={{ padding: "8px 10px", fontWeight: 600, color: OZONE_NAVY }}>{z.zone}</td>
-                  <td style={{ padding: "8px 10px" }}>{z.orders}</td>
-                  <td style={{ padding: "8px 10px", color: "#10B981", fontWeight: 600 }}>{z.done}</td>
-                  <td style={{ padding: "8px 10px" }}>{pct(z.done, z.orders)}%</td>
-                  <td style={{ padding: "8px 10px", fontWeight: 600 }}>{fmt(z.value)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {/* Sales Person Analytics */}
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Sales Person Leaderboard</div>
-          {spAnalytics.slice(0, 8).map((sp, i) => {
-            const maxVal = spAnalytics[0].value;
-            return (
-              <div key={sp.sp} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: i < 3 ? OZONE_GOLD : "#E5E7EB", color: i < 3 ? "#fff" : "#6B7280", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700 }}>{i + 1}</span>
-                    {sp.sp}
-                  </span>
-                  <span style={{ fontWeight: 600, color: OZONE_NAVY }}>{fmt(sp.value)}</span>
-                </div>
-                <div style={{ height: 5, background: "#F3F4F6", borderRadius: 4 }}>
-                  <div style={{ height: "100%", width: `${pct(sp.value, maxVal)}%`, background: i < 3 ? OZONE_GOLD : OZONE_NAVY, borderRadius: 4, opacity: 0.8 }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {/* Product Deep-Dive */}
-      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Product Category Analysis</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          {["Aluminium Doors & Windows", "UPVC Windows"].map(prod => {
-            const pd = data.filter(d => d.product === prod);
-            const done = pd.filter(d => d.status === "Done");
-            const val = pd.reduce((s, d) => s + d.basicOrderValue, 0);
-            const qty = pd.reduce((s, d) => s + d.totalQty, 0);
-            return (
-              <div key={prod} style={{ border: "1px solid #E5E7EB", borderRadius: 8, padding: "14px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: OZONE_NAVY, marginBottom: 10 }}>{prod}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {[["Orders", pd.length], ["Completed", done.length], ["Total Qty", qty], ["Order Value", fmt(val)]].map(([l, v]) => (
-                    <div key={l} style={{ background: "#F8FAFF", borderRadius: 6, padding: "8px 10px" }}>
-                      <div style={{ fontSize: 10, color: "#9CA3AF" }}>{l}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: OZONE_NAVY }}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
- 
-// ─── Partners ───
-function Partners({ data }) {
-  const partners = [...new Set(data.map(d => d.partner))];
-  const partnerData = partners.map(p => {
-    const pd = data.filter(d => d.partner === p);
-    const done = pd.filter(d => d.status === "Done");
-    const val = pd.reduce((s, d) => s + d.basicOrderValue, 0);
-    const qty = pd.reduce((s, d) => s + d.totalQty, 0);
-    const zones = [...new Set(pd.map(d => d.zone))];
-    return { partner: p, orders: pd.length, done: done.length, pending: pd.length - done.length, value: val, qty, convRate: pct(done.length, pd.length), zones: zones.join(", ") };
-  }).sort((a, b) => b.value - a.value);
- 
-  return (
-    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 20 }}>
-        <KpiCard label="Total Partners" value={partners.length} icon="🤝" color={OZONE_NAVY} />
-        <KpiCard label="Total Partner Orders" value={data.length} icon="📦" color="#6366F1" />
-        <KpiCard label="Avg Order Value" value={fmt(data.reduce((s, d) => s + d.basicOrderValue, 0) / Math.max(data.length, 1))} icon="📈" color="#0EA5E9" />
-        <KpiCard label="Top Conversion" value={`${Math.max(...partnerData.map(p => p.convRate))}%`} icon="🏆" color="#10B981" />
-      </div>
-      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid #F3F4F6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY }}>Partner Performance Matrix</div>
-          <button style={{ padding: "6px 14px", background: OZONE_NAVY, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>⬇ Export</button>
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-            <thead>
-              <tr style={{ background: "#F8FAFF" }}>
-                {["#", "Partner Name", "Zones", "Orders", "Done", "Pending", "Conv%", "Total Qty", "Order Value"].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", borderBottom: "1px solid #E5E7EB", whiteSpace: "nowrap" }}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {partnerData.map((p, i) => (
-                <tr key={p.partner} style={{ borderBottom: "1px solid #F3F4F6", background: i % 2 ? "#FAFAFA" : "#fff" }}>
-                  <td style={{ padding: "10px 12px", color: "#9CA3AF", fontWeight: 600 }}>{i + 1}</td>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: OZONE_NAVY, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.partner}</td>
-                  <td style={{ padding: "10px 12px", color: "#6B7280", fontSize: 11 }}>{p.zones}</td>
-                  <td style={{ padding: "10px 12px" }}>{p.orders}</td>
-                  <td style={{ padding: "10px 12px", color: "#10B981", fontWeight: 600 }}>{p.done}</td>
-                  <td style={{ padding: "10px 12px", color: "#F59E0B", fontWeight: 600 }}>{p.pending}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{ background: p.convRate >= 50 ? "#ECFDF5" : "#FEF2F2", color: p.convRate >= 50 ? "#065F46" : "#991B1B", padding: "2px 8px", borderRadius: 12, fontWeight: 600, fontSize: 11 }}>{p.convRate}%</span>
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>{p.qty}</td>
-                  <td style={{ padding: "10px 12px", fontWeight: 700, color: OZONE_NAVY }}>{fmt(p.value)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
- 
-// ─── Payment Tracker ───
-function PaymentTracker({ data }) {
-  const totalVal = data.reduce((s, d) => s + d.basicOrderValue, 0);
-  const advanceVal = data.reduce((s, d) => s + d.basicOrderValue * (d.advancePercent / 100), 0);
-  const surveyVal = data.reduce((s, d) => s + d.basicOrderValue * (d.surveyPercent / 100), 0);
-  const despatchVal = data.reduce((s, d) => s + d.basicOrderValue * (d.despatchPercent / 100), 0);
-  const collected = data.filter(d => d.status === "Done").reduce((s, d) => s + d.basicOrderValue, 0);
-  const outstanding = totalVal - collected;
- 
-  return (
-    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
-        <KpiCard label="Total Billed" value={fmt(totalVal)} icon="🧾" color={OZONE_NAVY} />
-        <KpiCard label="Advance (30%)" value={fmt(advanceVal)} icon="💵" color="#0EA5E9" />
-        <KpiCard label="Survey Stage (20%)" value={fmt(surveyVal)} icon="🔍" color="#6366F1" />
-        <KpiCard label="Despatch (50%)" value={fmt(despatchVal)} icon="🚛" color="#F59E0B" />
-        <KpiCard label="Collected" value={fmt(collected)} icon="✅" color="#10B981" />
-        <KpiCard label="Outstanding" value={fmt(outstanding)} icon="⚠️" color="#EF4444" />
-      </div>
- 
-      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px", marginBottom: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Collection Progress</div>
-        {[{ label: "Advance Collected", val: advanceVal, max: advanceVal, color: "#0EA5E9" },
-          { label: "Survey Stage", val: surveyVal * 0.6, max: surveyVal, color: "#6366F1" },
-          { label: "Despatch Stage", val: despatchVal * 0.35, max: despatchVal, color: "#F59E0B" },
-          { label: "Total Collection", val: collected, max: totalVal, color: "#10B981" }
-        ].map(item => (
-          <div key={item.label} style={{ marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 5 }}>
-              <span style={{ fontWeight: 600, color: "#374151" }}>{item.label}</span>
-              <span style={{ color: item.color, fontWeight: 700 }}>{fmt(item.val)} / {fmt(item.max)} ({pct(item.val, item.max)}%)</span>
-            </div>
-            <div style={{ height: 8, background: "#F3F4F6", borderRadius: 4 }}>
-              <div style={{ height: "100%", width: `${pct(item.val, item.max)}%`, background: item.color, borderRadius: 4 }} />
-            </div>
-          </div>
-        ))}
-      </div>
- 
-      {/* Payment Stage Table */}
-      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid #F3F4F6", fontSize: 13, fontWeight: 700, color: OZONE_NAVY }}>Order Payment Status</div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-            <thead>
-              <tr style={{ background: "#F8FAFF" }}>
-                {["Quotation #", "Customer", "Partner", "Order Value", "Advance Due", "Survey Due", "Despatch Due", "Status"].map(h => (
-                  <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", borderBottom: "1px solid #E5E7EB", whiteSpace: "nowrap" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.slice(0, 12).map((r, i) => (
-                <tr key={r.sno} style={{ borderBottom: "1px solid #F3F4F6", background: i % 2 ? "#FAFAFA" : "#fff" }}>
-                  <td style={{ padding: "9px 12px", color: OZONE_NAVY, fontWeight: 600 }}>{r.quotationNumber}</td>
-                  <td style={{ padding: "9px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.customer}</td>
-                  <td style={{ padding: "9px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.partner}</td>
-                  <td style={{ padding: "9px 12px", fontWeight: 600 }}>{fmt(r.basicOrderValue)}</td>
-                  <td style={{ padding: "9px 12px" }}>{fmt(r.basicOrderValue * 0.3)}</td>
-                  <td style={{ padding: "9px 12px" }}>{fmt(r.basicOrderValue * 0.2)}</td>
-                  <td style={{ padding: "9px 12px" }}>{fmt(r.basicOrderValue * 0.5)}</td>
-                  <td style={{ padding: "9px 12px" }}>
-                    <span style={{ background: r.status === "Done" ? "#ECFDF5" : "#FEF2F2", color: r.status === "Done" ? "#065F46" : "#991B1B", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{r.status === "Done" ? "Cleared" : "Pending"}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
- 
-// ─── Order Punch ───
-function OrderPunch({ onSubmit }) {
-  const [form, setForm] = useState({
-    zm: "", rsm: "", month: "", quarter: "", year: "2024", status: "Pending", product: "Aluminium Doors & Windows",
-    zone: "", salesPerson: "", customer: "", partner: "", totalQty: "", basicOrderValue: "",
-    quotationNumber: "", invoiceNo: "", category: "", color: "", address: "", location: "",
-    advancePercent: 30, surveyPercent: 20, despatchPercent: 50, enquirySource: "Ozone",
-    itemType: "Kit", dateOfOrder: new Date().toISOString().slice(0, 10),
-    technicalValidation: "", finalRemark: "",
-  });
-  const [submitted, setSubmitted] = useState(false);
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const inp = (label, key, type = "text", opts = null) => (
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>
-      {opts ? (
-        <select value={form[key]} onChange={e => set(key, e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E5E7EB", borderRadius: 7, fontSize: 13, boxSizing: "border-box" }}>
-          <option value="">— Select —</option>
-          {opts.map(o => <option key={o}>{o}</option>)}
-        </select>
-      ) : (
-        <input type={type} value={form[key]} onChange={e => set(key, e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E5E7EB", borderRadius: 7, fontSize: 13, boxSizing: "border-box" }} />
-      )}
-    </div>
-  );
- 
-  const handleSubmit = () => {
-    if (!form.customer || !form.basicOrderValue) { alert("Please fill in Customer Name and Basic Order Value."); return; }
-    setSubmitted(true);
-    setTimeout(() => { setSubmitted(false); onSubmit && onSubmit(form); }, 2000);
+// ── ORDER MANAGEMENT ──────────────────────────────────────────────────────
+function renderOrders(){
+  const data=filteredData();
+  const PER=15,pg=STATE.orderPage;
+  const pages=Math.max(1,Math.ceil(data.length/PER));
+  const rows=data.slice((pg-1)*PER,pg*PER);
+  const stBadge=(s)=>{
+    const map={Done:"badge-green",Survey:"badge-blue",Production:"badge-purple",Dispatch:"badge-amber",Installation:"badge-cyan",Pending:"badge-red","Quotation Sent":"badge-gray"};
+    return h("span",{class:"badge "+(map[s]||"badge-gray")},s);
   };
- 
-  return (
-    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-      {submitted && (
-        <div style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 10, padding: "14px 18px", marginBottom: 16, color: "#065F46", fontWeight: 600, fontSize: 14 }}>
-          ✅ Order punched successfully! Syncing to data source…
-        </div>
-      )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
-        {/* Section 1: Order Info */}
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: OZONE_NAVY, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1, borderBottom: "2px solid " + OZONE_NAVY, paddingBottom: 8 }}>📋 Order Information</div>
-          {inp("Date of Order", "dateOfOrder", "date")}
-          {inp("Quotation Number", "quotationNumber")}
-          {inp("Year", "year", "text", ["2023", "2024", "2025"])}
-          {inp("Month", "month", "text", ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])}
-          {inp("Quarter", "quarter", "text", ["Q1", "Q2", "Q3", "Q4"])}
-          {inp("Status", "status", "text", ["Pending", "Quotation Sent", "Survey", "Production", "Dispatch", "Installation", "Done"])}
-          {inp("Enquiry Source", "enquirySource", "text", ["Ozone", "Partner"])}
-          {inp("Item Type", "itemType", "text", ["Kit", "Customised"])}
-        </div>
-        {/* Section 2: Customer & Product */}
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: OZONE_NAVY, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1, borderBottom: "2px solid " + OZONE_NAVY, paddingBottom: 8 }}>👤 Customer & Product</div>
-          {inp("Customer Name (Ship To)", "customer")}
-          {inp("Product", "product", "text", ["Aluminium Doors & Windows", "UPVC Windows"])}
-          {inp("Category", "category", "text", ["Premium", "Standard", "Economy"])}
-          {inp("Color", "color")}
-          {inp("Total Qty", "totalQty", "number")}
-          {inp("Basic Order Value (₹ Lakhs)", "basicOrderValue", "number")}
-          {inp("Address", "address")}
-          {inp("Location", "location")}
-          {inp("Invoice No", "invoiceNo")}
-        </div>
-        {/* Section 3: Team & Payment */}
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: OZONE_NAVY, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1, borderBottom: "2px solid " + OZONE_NAVY, paddingBottom: 8 }}>🏢 Team & Payment</div>
-          {inp("Zone", "zone", "text", ["North", "South", "East", "West", "Central"])}
-          {inp("Zonal Manager (ZM)", "zm")}
-          {inp("Regional Sales Manager", "rsm")}
-          {inp("Sales Person", "salesPerson")}
-          {inp("Ozo Blu Partner (as per SAP)", "partner")}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Advance %</label>
-            <input type="range" min="0" max="100" value={form.advancePercent} onChange={e => set("advancePercent", e.target.value)} style={{ width: "100%" }} />
-            <div style={{ fontSize: 11, color: "#6B7280", textAlign: "right" }}>{form.advancePercent}%</div>
-          </div>
-          {inp("Technical Validation", "technicalValidation")}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Final Remark</label>
-            <textarea value={form.finalRemark} onChange={e => set("finalRemark", e.target.value)} rows={3} style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E5E7EB", borderRadius: 7, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
-          </div>
-        </div>
-      </div>
-      <div style={{ marginTop: 20, display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <button onClick={() => setForm(f => ({ ...f, customer: "", basicOrderValue: "", quotationNumber: "", totalQty: "" }))} style={{ padding: "10px 24px", border: "1.5px solid #E5E7EB", background: "#fff", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Clear Form</button>
-        <button onClick={handleSubmit} style={{ padding: "10px 32px", background: OZONE_NAVY, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-          ✓ Submit Order
-        </button>
-      </div>
-    </div>
+  const pgBtns=[];
+  for(let i=1;i<=Math.min(pages,5);i++){
+    pgBtns.push(h("button",{class:"pg-btn"+(i===pg?" active":""),onclick:()=>setState({orderPage:i})},i));
+  }
+  return h("div",{class:"page"},
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}},
+      h("div",{style:{fontSize:"13px",color:"#6B7280"}},"Showing "+data.length+" orders"),
+      h("button",{class:"export-btn"},"⬇ Export CSV")
+    ),
+    h("div",{class:"table-wrap"},
+      h("div",{style:{overflowX:"auto"}},
+        h("table",{},
+          h("thead",{},h("tr",{},
+            ...["S.No","Date","Quotation #","Customer","Partner","Product","Zone","Sales Person","Qty","Value","Status"]
+              .map(c=>h("th",{},c))
+          )),
+          h("tbody",{},...rows.map(r=>
+            h("tr",{},
+              h("td",{style:{color:"#9CA3AF"}},r.sno),
+              h("td",{},r.dateOfOrder),
+              h("td",{style:{color:NAVY,fontWeight:"600"}},r.quotationNumber),
+              h("td",{},r.customer),
+              h("td",{},r.partner),
+              h("td",{},r.product),
+              h("td",{},r.zone),
+              h("td",{},r.salesPerson),
+              h("td",{style:{textAlign:"right"}},r.totalQty),
+              h("td",{style:{fontWeight:"600",color:NAVY}},fmt(r.basicOrderValue)),
+              h("td",{},stBadge(r.status))
+            )
+          ))
+        )
+      ),
+      h("div",{class:"table-footer"},
+        h("span",{},"Page "+pg+" of "+pages+" · "+data.length+" records"),
+        h("div",{style:{display:"flex",gap:"5px"}},...pgBtns)
+      )
+    )
   );
 }
  
-// ─── Settings ───
-function Settings({ user }) {
-  const [tab, setTab] = useState("datasource");
-  const [sheetUrl, setSheetUrl] = useState("");
-  const [connected, setConnected] = useState(false);
-  const tabs = [["datasource", "Data Source"], ["columns", "Column Mapping"], ["kpis", "KPI Config"], ["users", "User Management"], ["filters", "Filter Config"]];
- 
-  return (
-    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid #E5E7EB", paddingBottom: 0 }}>
-        {tabs.map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} style={{ padding: "8px 16px", border: "none", borderBottom: tab === id ? `2px solid ${OZONE_NAVY}` : "2px solid transparent", background: "transparent", color: tab === id ? OZONE_NAVY : "#6B7280", fontSize: 13, fontWeight: tab === id ? 700 : 400, cursor: "pointer" }}>
-            {label}
-          </button>
-        ))}
-      </div>
- 
-      {tab === "datasource" && (
-        <div style={{ maxWidth: 600 }}>
-          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: OZONE_NAVY, marginBottom: 4 }}>Google Sheets Integration</div>
-            <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 18 }}>Connect your live Google Sheet as the data source for all dashboards and reports.</div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>SHEET URL OR ID</label>
-            <input value={sheetUrl} onChange={e => setSheetUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..." style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #E5E7EB", borderRadius: 7, fontSize: 13, boxSizing: "border-box", marginBottom: 12 }} />
-            <button onClick={() => setConnected(true)} style={{ padding: "9px 20px", background: OZONE_NAVY, color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              {connected ? "✓ Connected" : "Connect Sheet"}
-            </button>
-            {connected && <div style={{ marginTop: 12, padding: "10px 14px", background: "#ECFDF5", borderRadius: 7, fontSize: 12, color: "#065F46" }}>✅ Sheet connected. Auto-sync enabled every 5 minutes.</div>}
-          </div>
-          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px", marginTop: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>System Status</div>
-            {[["Data Source", "Connected (Demo)", "#10B981"], ["Last Sync", "Just now", "#6B7280"], ["Total Records", "120", "#6B7280"], ["Schema Version", "94 columns · v1.0", "#6B7280"]].map(([k, v, c]) => (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #F3F4F6", fontSize: 13 }}>
-                <span style={{ color: "#6B7280" }}>{k}</span><span style={{ fontWeight: 600, color: c }}>{v}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
- 
-      {tab === "columns" && (
-        <div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 14 }}>All 94 columns from the connected spreadsheet — mapped to platform modules.</div>
-          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead>
-                <tr style={{ background: "#F8FAFF" }}>
-                  {["#", "Column Name", "Type", "Mapped To", "Status"].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>{h}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  [1, "ZM", "Text", "Zone Manager field", "Active"],
-                  [2, "RSM", "Text", "Regional Manager", "Active"],
-                  [3, "Month", "Text", "Filters, Trend Charts", "Active"],
-                  [7, "Status", "Text", "Order Status KPIs", "Active"],
-                  [10, "S.No.", "Number", "Order Count KPI", "Active"],
-                  [16, "Sales Person", "Text", "Sales Leaderboard", "Active"],
-                  [19, "Product", "Text", "Product Analytics", "Active"],
-                  [22, "Total Qty", "Number", "Qty KPIs", "Active"],
-                  [25, "Basic Order Value", "Currency", "Revenue KPIs", "Active"],
-                  [30, "Total Order Value", "Currency", "Commercial Reports", "Active"],
-                  [33, "Zone", "Text", "Zone Filters & Charts", "Active"],
-                  [34, "Quotation Number", "Text", "Search, Tracking", "Active"],
-                  [67, "Production Order to Factory", "Date", "Funnel Stage", "Active"],
-                  [85, "Despatch Date", "Date", "Dispatch Stage", "Active"],
-                  [93, "Handover", "Date", "Completion Stage", "Active"],
-                ].map(([n, col, type, mapped, status]) => (
-                  <tr key={n} style={{ borderBottom: "1px solid #F3F4F6" }}>
-                    <td style={{ padding: "8px 12px", color: "#9CA3AF" }}>{n}</td>
-                    <td style={{ padding: "8px 12px", fontWeight: 600, color: OZONE_NAVY }}>{col}</td>
-                    <td style={{ padding: "8px 12px", color: "#6B7280" }}>{type}</td>
-                    <td style={{ padding: "8px 12px" }}>{mapped}</td>
-                    <td style={{ padding: "8px 12px" }}><span style={{ background: "#ECFDF5", color: "#065F46", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{status}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
- 
-      {tab === "users" && (
-        <div style={{ maxWidth: 600 }}>
-          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Platform Users</div>
-            {[{ name: "Admin User", role: "Administrator", access: "Full Access" }, { name: "Sales Manager", role: "Sales", access: "Dashboard + Orders + Punch" }, { name: "Operations Head", role: "Operations", access: "Orders + Funnel + Analytics" }].map((u, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #F3F4F6" }}>
-                <div style={{ width: 38, height: 38, borderRadius: "50%", background: OZONE_NAVY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14 }}>{u.name.charAt(0)}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{u.name}</div>
-                  <div style={{ fontSize: 11, color: "#9CA3AF" }}>{u.access}</div>
-                </div>
-                <span style={{ background: "#EEF3FF", color: OZONE_NAVY, padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{u.role}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
- 
-      {(tab === "kpis" || tab === "filters") && (
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 8 }}>{tab === "kpis" ? "KPI Configuration" : "Filter Configuration"}</div>
-          <div style={{ fontSize: 12, color: "#6B7280" }}>All {tab === "kpis" ? "9 executive KPIs" : "filter axes"} are auto-mapped from the connected data source. Modify visibility, labels, and thresholds below.</div>
-          <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {(tab === "kpis" ? ["Total Orders", "Total Qty", "Total Order Value", "Completed Orders", "Completed Value", "Pending Orders", "Pending Value", "Aluminium Qty", "UPVC Qty"] : ["Zone", "Product", "Status", "Month", "Quarter", "Sales Person", "Partner", "Customer"]).map(k => (
-              <div key={k} style={{ background: "#F8FAFF", border: "1px solid #E5E7EB", borderRadius: 8, padding: "8px 14px", fontSize: 12, color: OZONE_NAVY, fontWeight: 600 }}>
-                ✓ {k}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+// ── FUNNEL ────────────────────────────────────────────────────────────────
+function renderFunnel(){
+  const data=filteredData();
+  const stages=[
+    {label:"Enquiry / Quotation",icon:"📞",keys:["Quotation Sent","Pending"]},
+    {label:"Commercial Approval",icon:"✔",keys:["Mark as Won"]},
+    {label:"Site Survey",icon:"🔍",keys:["Survey"]},
+    {label:"Production",icon:"🏭",keys:["Production"]},
+    {label:"Dispatch",icon:"🚛",keys:["Dispatch"]},
+    {label:"Installation",icon:"🔧",keys:["Installation"]},
+    {label:"Completed",icon:"🏆",keys:["Done"]},
+  ];
+  const colors=[NAVY,"#1D4ED8","#6D28D9","#0369A1","#0F766E","#15803D","#10B981"];
+  return h("div",{class:"page"},
+    h("div",{style:{fontSize:"13px",color:"#6B7280",marginBottom:"18px"}},"End-to-end order lifecycle — enquiry to completion"),
+    h("div",{class:"funnel-wrap"},
+      ...stages.flatMap((stage,i)=>{
+        const cnt=data.filter(d=>stage.keys.some(k=>d.status===k||d.status?.toLowerCase().includes(k.toLowerCase()))).length;
+        const val=data.filter(d=>stage.keys.some(k=>d.status===k||d.status?.toLowerCase().includes(k.toLowerCase()))).reduce((s,d)=>s+d.basicOrderValue,0);
+        const w=Math.max(40,100-i*8);
+        const els=[h("div",{class:"funnel-stage"},
+          h("div",{class:"funnel-bar",style:{background:colors[i],width:w+"%"}},
+            h("span",{style:{fontSize:"20px"}},stage.icon),
+            h("div",{style:{flex:"1"}},
+              h("div",{style:{fontSize:"13px",fontWeight:"700"}},stage.label),
+              h("div",{style:{fontSize:"11px",opacity:".8"}},val>0?fmt(val):"—")
+            ),
+            h("div",{style:{textAlign:"right"}},
+              h("div",{style:{fontSize:"18px",fontWeight:"700"}},cnt),
+              h("div",{style:{fontSize:"11px",opacity:".8"}},pct(cnt,data.length)+"%")
+            )
+          )
+        )];
+        if(i<stages.length-1) els.push(h("div",{class:"funnel-connector"}));
+        return els;
+      })
+    )
   );
 }
  
-// ─── Main App ───
-function App() {
-  const [user, setUser] = useState(null);
-  const [page, setPage] = useState("dashboard");
-  const [search, setSearch] = useState("");
-  const [collapsed, setCollapsed] = useState(false);
-  const [filters, setFilters] = useState({ zone: "All", product: "All", status: "All", month: "All" });
- 
-  const filteredData = useMemo(() => {
-    let d = ALL_DATA;
-    if (filters.zone !== "All") d = d.filter(r => r.zone === filters.zone);
-    if (filters.product !== "All") d = d.filter(r => r.product === filters.product);
-    if (filters.status !== "All") d = d.filter(r => r.status === filters.status);
-    if (filters.month !== "All") d = d.filter(r => r.month === filters.month);
-    return d;
-  }, [filters]);
- 
-  if (!user) return <LoginScreen onLogin={setUser} />;
- 
-  return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "system-ui,-apple-system,sans-serif", background: "#F9FAFB", overflow: "hidden" }}>
-      <Sidebar active={page} onNav={setPage} user={user} onLogout={() => setUser(null)} collapsed={collapsed} setCollapsed={setCollapsed} />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <TopBar page={page} user={user} search={search} setSearch={setSearch} data={filteredData} />
-        {page !== "punch" && page !== "settings" && <FilterBar filters={filters} setFilters={setFilters} data={ALL_DATA} />}
-        {page === "dashboard" && <Dashboard data={filteredData} />}
-        {page === "orders" && <OrderManagement data={filteredData} search={search} />}
-        {page === "funnel" && <SalesFunnel data={filteredData} />}
-        {page === "analytics" && <Analytics data={filteredData} />}
-        {page === "partners" && <Partners data={filteredData} />}
-        {page === "payments" && <PaymentTracker data={filteredData} />}
-        {page === "punch" && <OrderPunch />}
-        {page === "settings" && <Settings user={user} />}
-      </div>
-    </div>
+// ── ANALYTICS ────────────────────────────────────────────────────────────
+function renderAnalytics(){
+  const data=filteredData();
+  const zoneRows=ZONES.map(z=>{
+    const zd=data.filter(d=>d.zone===z);
+    const done=zd.filter(d=>d.status==="Done");
+    return{zone:z,orders:zd.length,done:done.length,val:zd.reduce((s,d)=>s+d.basicOrderValue,0)};
+  });
+  const spRows=[...new Set(data.map(d=>d.salesPerson))].map(sp=>{
+    const spd=data.filter(d=>d.salesPerson===sp);
+    return{sp,orders:spd.length,val:spd.reduce((s,d)=>s+d.basicOrderValue,0)};
+  }).sort((a,b)=>b.val-a.val);
+  const maxSP=spRows[0]?.val||1;
+  return h("div",{class:"page"},
+    h("div",{class:"charts-row"},
+      h("div",{class:"chart-card"},
+        h("div",{class:"chart-title"},"Zone-wise Performance"),
+        h("table",{style:{width:"100%",fontSize:"12px",borderCollapse:"collapse"}},
+          h("thead",{},h("tr",{style:{background:"#F8FAFF"}},
+            ...["Zone","Orders","Done","Conv%","Value"].map(c=>h("th",{style:{padding:"8px 10px",textAlign:"left",fontSize:"11px",fontWeight:"700",color:"#6B7280",borderBottom:"1px solid #E5E7EB"}},c))
+          )),
+          h("tbody",{},...zoneRows.map((z,i)=>
+            h("tr",{style:{borderBottom:"1px solid #F3F4F6",background:i%2?"#FAFAFA":"#fff"}},
+              h("td",{style:{padding:"8px 10px",fontWeight:"600",color:NAVY}},z.zone),
+              h("td",{style:{padding:"8px 10px"}},z.orders),
+              h("td",{style:{padding:"8px 10px",color:"#10B981",fontWeight:"600"}},z.done),
+              h("td",{style:{padding:"8px 10px"}},pct(z.done,z.orders)+"%"),
+              h("td",{style:{padding:"8px 10px",fontWeight:"600"}},fmt(z.val))
+            )
+          ))
+        )
+      ),
+      h("div",{class:"chart-card"},
+        h("div",{class:"chart-title"},"Sales Person Leaderboard"),
+        ...spRows.slice(0,8).map((sp,i)=>
+          h("div",{class:"progress-row"},
+            h("div",{class:"progress-label"},
+              h("span",{style:{display:"flex",alignItems:"center",gap:"6px"}},
+                h("span",{style:{width:"18px",height:"18px",borderRadius:"50%",background:i<3?GOLD:"#E5E7EB",color:i<3?"#fff":"#6B7280",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:"9px",fontWeight:"700",flexShrink:"0"}},i+1),
+                sp.sp
+              ),
+              h("span",{style:{fontWeight:"600",color:NAVY}},fmt(sp.val))
+            ),
+            h("div",{class:"progress-bg"},h("div",{class:"progress-fill",style:{width:pct(sp.val,maxSP)+"%",background:i<3?GOLD:NAVY,opacity:".85"}}))
+          )
+        )
+      )
+    ),
+    h("div",{class:"chart-card"},
+      h("div",{class:"chart-title"},"Product Category Analysis"),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px"}},
+        ...PRODUCTS.map(prod=>{
+          const pd=data.filter(d=>d.product===prod);
+          const done=pd.filter(d=>d.status==="Done");
+          return h("div",{style:{border:"1px solid #E5E7EB",borderRadius:"8px",padding:"14px"}},
+            h("div",{style:{fontSize:"12px",fontWeight:"700",color:NAVY,marginBottom:"10px"}},prod),
+            h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},
+              ...([["Orders",pd.length],["Completed",done.length],["Total Qty",pd.reduce((s,d)=>s+d.totalQty,0)],["Value",fmt(pd.reduce((s,d)=>s+d.basicOrderValue,0))]].map(([l,v])=>
+                h("div",{class:"stat-chip"},h("div",{class:"stat-chip-label"},l),h("div",{class:"stat-chip-val"},v))
+              ))
+            )
+          );
+        })
+      )
+    )
   );
 }
  
+// ── PARTNERS ─────────────────────────────────────────────────────────────
+function renderPartners(){
+  const data=filteredData();
+  const partners=[...new Set(data.map(d=>d.partner))];
+  const rows=partners.map(p=>{
+    const pd=data.filter(d=>d.partner===p);
+    const done=pd.filter(d=>d.status==="Done");
+    return{p,orders:pd.length,done:done.length,val:pd.reduce((s,d)=>s+d.basicOrderValue,0),
+      qty:pd.reduce((s,d)=>s+d.totalQty,0),conv:pct(done.length,pd.length),
+      zones:[...new Set(pd.map(d=>d.zone))].join(", ")};
+  }).sort((a,b)=>b.val-a.val);
+  const avgOV=data.reduce((s,d)=>s+d.basicOrderValue,0)/Math.max(data.length,1);
+  const maxConv=Math.max(...rows.map(r=>r.conv));
+  return h("div",{class:"page"},
+    h("div",{class:"kpi-grid",style:{gridTemplateColumns:"repeat(4,1fr)"}},
+      ...[["Partners",partners.length,"🤝"],["Total Orders",data.length,"📦"],["Avg Order Value",fmt(avgOV),"📈"],["Top Conversion",maxConv+"%","🏆"]].map(([l,v,ic])=>
+        h("div",{class:"kpi-card"},
+          h("div",{class:"kpi-label"},l),
+          h("div",{class:"kpi-row"},h("div",{class:"kpi-value"},v),h("div",{class:"kpi-icon"},ic))
+        )
+      )
+    ),
+    h("div",{class:"table-wrap"},
+      h("div",{class:"table-header"},
+        h("div",{class:"table-title"},"Partner Performance Matrix"),
+        h("button",{class:"export-btn"},"⬇ Export")
+      ),
+      h("div",{style:{overflowX:"auto"}},
+        h("table",{},
+          h("thead",{},h("tr",{},...["#","Partner Name","Zones","Orders","Done","Pending","Conv%","Total Qty","Order Value"].map(c=>h("th",{},c)))),
+          h("tbody",{},...rows.map((r,i)=>
+            h("tr",{style:{borderBottom:"1px solid #F3F4F6",background:i%2?"#FAFAFA":"#fff"}},
+              h("td",{style:{color:"#9CA3AF",fontWeight:"600",padding:"10px 12px"}},i+1),
+              h("td",{style:{fontWeight:"600",color:NAVY,padding:"10px 12px"}},r.p),
+              h("td",{style:{color:"#6B7280",fontSize:"11px",padding:"10px 12px"}},r.zones),
+              h("td",{style:{padding:"10px 12px"}},r.orders),
+              h("td",{style:{color:"#10B981",fontWeight:"600",padding:"10px 12px"}},r.done),
+              h("td",{style:{color:"#F59E0B",fontWeight:"600",padding:"10px 12px"}},r.orders-r.done),
+              h("td",{style:{padding:"10px 12px"}},h("span",{class:"badge "+(r.conv>=50?"badge-green":"badge-red")},r.conv+"%")),
+              h("td",{style:{padding:"10px 12px"}},r.qty),
+              h("td",{style:{fontWeight:"700",color:NAVY,padding:"10px 12px"}},fmt(r.val))
+            )
+          ))
+        )
+      )
+    )
+  );
+}
  
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App/>);
+// ── PAYMENTS ─────────────────────────────────────────────────────────────
+function renderPayments(){
+  const data=filteredData();
+  const totalVal=data.reduce((s,d)=>s+d.basicOrderValue,0);
+  const collected=data.filter(d=>d.status==="Done").reduce((s,d)=>s+d.basicOrderValue,0);
+  const adv=totalVal*0.3,surv=totalVal*0.2,desp=totalVal*0.5;
+  const bars=[
+    {label:"Advance Collected",val:adv,max:adv,color:"#0EA5E9"},
+    {label:"Survey Stage",val:surv*0.6,max:surv,color:"#6366F1"},
+    {label:"Despatch Stage",val:desp*0.35,max:desp,color:"#F59E0B"},
+    {label:"Total Collection",val:collected,max:totalVal,color:"#10B981"},
+  ];
+  return h("div",{class:"page"},
+    h("div",{class:"kpi-grid",style:{gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))"}},
+      ...[["Total Billed",fmt(totalVal),"🧾"],["Advance (30%)",fmt(adv),"💵"],["Survey (20%)",fmt(surv),"🔍"],["Despatch (50%)",fmt(desp),"🚛"],["Collected",fmt(collected),"✅"],["Outstanding",fmt(totalVal-collected),"⚠️"]].map(([l,v,ic])=>
+        h("div",{class:"kpi-card"},h("div",{class:"kpi-label"},l),h("div",{class:"kpi-row"},h("div",{class:"kpi-value"},v),h("div",{class:"kpi-icon"},ic)))
+      )
+    ),
+    h("div",{class:"chart-card",style:{marginBottom:"14px"}},
+      h("div",{class:"chart-title"},"Collection Progress"),
+      ...bars.map(b=>
+        h("div",{class:"progress-row",style:{marginBottom:"14px"}},
+          h("div",{class:"progress-label"},
+            h("span",{style:{fontWeight:"600",color:"#374151"}},b.label),
+            h("span",{style:{color:b.color,fontWeight:"700"}},fmt(b.val)+" / "+fmt(b.max)+" ("+pct(b.val,b.max)+"%)")
+          ),
+          h("div",{class:"progress-bg",style:{height:"8px"}},h("div",{class:"progress-fill",style:{width:pct(b.val,b.max)+"%",background:b.color}}))
+        )
+      )
+    ),
+    h("div",{class:"table-wrap"},
+      h("div",{class:"table-header"},h("div",{class:"table-title"},"Order Payment Status")),
+      h("div",{style:{overflowX:"auto"}},
+        h("table",{},
+          h("thead",{},h("tr",{},...["Quotation #","Customer","Partner","Order Value","Advance Due","Survey Due","Despatch Due","Status"].map(c=>h("th",{},c)))),
+          h("tbody",{},...data.slice(0,12).map((r,i)=>
+            h("tr",{style:{borderBottom:"1px solid #F3F4F6",background:i%2?"#FAFAFA":"#fff"}},
+              h("td",{style:{color:NAVY,fontWeight:"600",padding:"9px 12px"}},r.quotationNumber),
+              h("td",{style:{padding:"9px 12px"}},r.customer),
+              h("td",{style:{padding:"9px 12px"}},r.partner),
+              h("td",{style:{fontWeight:"600",padding:"9px 12px"}},fmt(r.basicOrderValue)),
+              h("td",{style:{padding:"9px 12px"}},fmt(r.basicOrderValue*0.3)),
+              h("td",{style:{padding:"9px 12px"}},fmt(r.basicOrderValue*0.2)),
+              h("td",{style:{padding:"9px 12px"}},fmt(r.basicOrderValue*0.5)),
+              h("td",{style:{padding:"9px 12px"}},h("span",{class:"badge "+(r.status==="Done"?"badge-green":"badge-red")},r.status==="Done"?"Cleared":"Pending"))
+            )
+          ))
+        )
+      )
+    )
+  );
+}
+ 
+// ── ORDER PUNCH ───────────────────────────────────────────────────────────
+function renderPunch(){
+  const F=STATE.formData;
+  function field(label,key,type,opts){
+    const lbl=h("label",{},label);
+    let inp;
+    if(opts){
+      inp=h("select",{onchange:e=>{STATE.formData[key]=e.target.value;}},
+        h("option",{value:""},"— Select —"),
+        ...opts.map(o=>{const opt=h("option",{value:o},o);if(F[key]===o)opt.selected=true;return opt;})
+      );
+    } else {
+      inp=h("input",{type:type||"text",value:F[key]||"",oninput:e=>{STATE.formData[key]=e.target.value;}});
+    }
+    return h("div",{class:"form-field"},lbl,inp);
+  }
+  const success=STATE.punchSubmitted?h("div",{class:"success-msg"},"✅ Order punched successfully! Syncing to data source…"):null;
+  return h("div",{class:"page"},
+    success,
+    h("div",{class:"form-grid"},
+      h("div",{class:"form-section"},
+        h("div",{class:"section-title"},"📋 Order Information"),
+        field("Date of Order","dateOfOrder","date"),
+        field("Quotation Number","quotationNumber"),
+        field("Year","year","text",["2023","2024","2025"]),
+        field("Month","month","text",MONTHS),
+        field("Quarter","quarter","text",["Q1","Q2","Q3","Q4"]),
+        field("Status","status","text",["Pending","Quotation Sent","Survey","Production","Dispatch","Installation","Done"]),
+        field("Enquiry Source","enquirySource","text",["Ozone","Partner"]),
+        field("Item Type","itemType","text",["Kit","Customised"])
+      ),
+      h("div",{class:"form-section"},
+        h("div",{class:"section-title"},"👤 Customer & Product"),
+        field("Customer Name (Ship To)","customer"),
+        field("Product","product","text",PRODUCTS),
+        field("Category","category","text",["Premium","Standard","Economy"]),
+        field("Color","color"),
+        field("Total Qty","totalQty","number"),
+        field("Basic Order Value (₹ Lakhs)","basicOrderValue","number"),
+        field("Address","address"),
+        field("Location","location"),
+        field("Invoice No","invoiceNo")
+      ),
+      h("div",{class:"form-section"},
+        h("div",{class:"section-title"},"🏢 Team & Assignment"),
+        field("Zone","zone","text",ZONES),
+        field("Zonal Manager (ZM)","zm"),
+        field("Regional Sales Manager","rsm"),
+        field("Sales Person","salesPerson","text",SALESPERSONS),
+        field("Ozo Blu Partner (SAP)","partner","text",PARTNERS),
+        field("SO Number","soNumber"),
+        field("SAP FG Code","sapFgCode"),
+        field("Technical Validation","technicalValidation"),
+        h("div",{class:"form-field"},
+          h("label",{},"Final Remark"),
+          h("textarea",{rows:"3",oninput:e=>{STATE.formData.finalRemark=e.target.value;},style:{width:"100%",padding:"8px 10px",border:"1.5px solid #E5E7EB",borderRadius:"7px",fontSize:"13px",fontFamily:"inherit",resize:"vertical"}},F.finalRemark||"")
+        )
+      )
+    ),
+    h("div",{class:"form-actions"},
+      h("button",{class:"btn-secondary",onclick:()=>setState({formData:{},punchSubmitted:false})},"Clear Form"),
+      h("button",{class:"btn-primary",onclick:()=>{
+        if(!STATE.formData.customer||!STATE.formData.basicOrderValue){alert("Please fill Customer Name and Basic Order Value.");return;}
+        setState({punchSubmitted:true});
+        setTimeout(()=>setState({punchSubmitted:false,formData:{}}),3000);
+      }},"✓ Submit Order")
+    )
+  );
+}
+ 
+// ── SETTINGS ─────────────────────────────────────────────────────────────
+function renderSettings(){
+  const t=STATE.settingsTab;
+  function tab(id,label){return h("button",{class:"tab"+(t===id?" active":""),onclick:()=>setState({settingsTab:id})},label);}
+  let content;
+  if(t==="datasource"){
+    let sheetUrl="";
+    const urlInp=h("input",{type:"text",placeholder:"https://docs.google.com/spreadsheets/d/…",style:{width:"100%",padding:"9px 12px",border:"1.5px solid #E5E7EB",borderRadius:"7px",fontSize:"13px",marginBottom:"12px",fontFamily:"inherit"},oninput:e=>{sheetUrl=e.target.value;}});
+    const statusDiv=h("div",{style:{marginTop:"10px"}});
+    content=h("div",{style:{maxWidth:"600px"}},
+      h("div",{class:"chart-card"},
+        h("div",{class:"chart-title"},"Google Sheets Integration"),
+        h("p",{style:{fontSize:"12px",color:"#6B7280",marginBottom:"16px"}},"Connect your live Google Sheet as the real-time data source for all dashboards."),
+        h("label",{style:{fontSize:"11px",fontWeight:"600",color:"#374151",display:"block",marginBottom:"5px",textTransform:"uppercase"}},"SHEET URL OR ID"),
+        urlInp,
+        h("button",{class:"btn-primary",style:{padding:"9px 18px"},onclick:()=>{
+          statusDiv.innerHTML="";
+          statusDiv.appendChild(h("div",{style:{padding:"10px 14px",background:"#ECFDF5",borderRadius:"7px",fontSize:"12px",color:"#065F46",marginTop:"10px"}},"✅ Sheet connected. Auto-sync enabled every 5 minutes."));
+        }},"Connect Sheet"),
+        statusDiv
+      ),
+      h("div",{class:"chart-card",style:{marginTop:"14px"}},
+        h("div",{class:"chart-title"},"System Status"),
+        ...[["Data Source","Connected (Demo)","#10B981"],["Last Sync","Just now","#6B7280"],["Total Records","120","#6B7280"],["Schema Version","94 columns · v1.0","#6B7280"]].map(([k,v,c])=>
+          h("div",{style:{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #F3F4F6",fontSize:"13px"}},
+            h("span",{style:{color:"#6B7280"}},k),h("span",{style:{fontWeight:"600",color:c}},v)
+          )
+        )
+      )
+    );
+  } else if(t==="columns"){
+    const cols=[
+      [1,"ZM","Text","Zone Manager field"],
+      [3,"Month","Text","Filters, Trend Charts"],
+      [8,"Status","Text","Order Status KPIs"],
+      [10,"S.No.","Number","Order Count KPI"],
+      [16,"Sales Person","Text","Sales Leaderboard"],
+      [19,"Product","Text","Product Analytics"],
+      [22,"Total Qty","Number","Qty KPIs"],
+      [25,"Basic Order Value","Currency","Revenue KPIs"],
+      [30,"Total Order Value","Currency","Commercial Reports"],
+      [33,"Zone","Text","Zone Filters & Charts"],
+      [34,"Quotation Number","Text","Search & Tracking"],
+      [67,"Production Order","Date","Funnel Stage"],
+      [85,"Despatch Date","Date","Dispatch Stage"],
+      [93,"Handover","Date","Completion Stage"],
+    ];
+    content=h("div",{class:"table-wrap"},
+      h("table",{},
+        h("thead",{},h("tr",{},...["#","Column Name","Type","Mapped To","Status"].map(c=>h("th",{},c)))),
+        h("tbody",{},...cols.map(([n,col,type,mapped])=>
+          h("tr",{},
+            h("td",{style:{color:"#9CA3AF"}},n),
+            h("td",{style:{fontWeight:"600",color:NAVY}},col),
+            h("td",{style:{color:"#6B7280"}},type),
+            h("td",{},mapped),
+            h("td",{},h("span",{class:"badge badge-green"},"Active"))
+          )
+        ))
+      )
+    );
+  } else if(t==="users"){
+    content=h("div",{style:{maxWidth:"600px"}},
+      h("div",{class:"chart-card"},
+        h("div",{class:"chart-title"},"Platform Users"),
+        ...[["Admin User","Administrator","Full Access"],["Sales Manager","Sales","Dashboard + Orders + Punch"],["Operations Head","Operations","Orders + Funnel + Analytics"]].map((u,i)=>
+          h("div",{style:{display:"flex",alignItems:"center",gap:"12px",padding:"12px 0",borderBottom:"1px solid #F3F4F6"}},
+            h("div",{style:{width:"36px",height:"36px",borderRadius:"50%",background:NAVY,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:"700",fontSize:"14px",flexShrink:"0"}},u[0].charAt(0)),
+            h("div",{style:{flex:"1"}},
+              h("div",{style:{fontSize:"13px",fontWeight:"600"}},u[0]),
+              h("div",{style:{fontSize:"11px",color:"#9CA3AF"}},u[2])
+            ),
+            h("span",{class:"badge badge-blue"},u[1])
+          )
+        )
+      )
+    );
+  } else {
+    const items=t==="kpis"
+      ?["Total Orders","Total Window Qty","Total Order Value","Completed Orders","Completed Value","Pending Orders","Pending Value","Aluminium Qty","UPVC Qty"]
+      :["Zone","Product","Status","Month","Quarter","Sales Person","Partner","Customer"];
+    content=h("div",{class:"chart-card"},
+      h("div",{class:"chart-title"},t==="kpis"?"KPI Configuration":"Filter Configuration"),
+      h("p",{style:{fontSize:"12px",color:"#6B7280",marginBottom:"14px"}},"All items auto-mapped from the connected data source."),
+      h("div",{style:{display:"flex",gap:"8px",flexWrap:"wrap"}},
+        ...items.map(k=>h("div",{style:{background:"#F8FAFF",border:"1px solid #E5E7EB",borderRadius:"8px",padding:"8px 14px",fontSize:"12px",color:NAVY,fontWeight:"600"}},"✓ "+k))
+      )
+    );
+  }
+  return h("div",{class:"page"},
+    h("div",{class:"tabs"},
+      tab("datasource","Data Source"),tab("columns","Column Mapping"),tab("kpis","KPI Config"),tab("users","Users"),tab("filters","Filters")
+    ),
+    content
+  );
+}
+ 
+// ── MAIN RENDER ───────────────────────────────────────────────────────────
+function render(){
+  const root=document.getElementById("app");
+  root.innerHTML="";
+  if(!STATE.user){root.appendChild(renderLogin());return;}
+  const showFilter=!["punch","settings"].includes(STATE.page);
+  const pageMap={dashboard:renderDashboard,orders:renderOrders,funnel:renderFunnel,analytics:renderAnalytics,partners:renderPartners,payments:renderPayments,punch:renderPunch,settings:renderSettings};
+  root.appendChild(
+    h("div",{class:"app"},
+      renderSidebar(),
+      h("div",{class:"main"},
+        renderTopbar(),
+        showFilter?renderFilterbar():null,
+        (pageMap[STATE.page]||renderDashboard)()
+      )
+    )
+  );
+}
+ 
+render();
 </script>
 </body>
 </html>
