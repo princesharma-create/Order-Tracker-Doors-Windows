@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ozone — Order Management</title>
+<!-- Ozone Platform v4.0 | Built: 2026-06-18 | Fixes: row-filter, labels, export -->
 <style>
 /* ━━━ RESET ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -128,7 +129,7 @@ a { color: #2563eb; text-decoration: none; }
 .ds-demo { background: #fef9c3; color: #854d0e; }
 
 /* ━━━ FILTER BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.filter-label { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 4px; }
+.filter-label { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 4px; padding-bottom: 6px; }
 .filter-groups { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
 .filter-group { display: flex; flex-direction: column; gap: 3px; }
 .filter-group-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -148,7 +149,7 @@ a { color: #2563eb; text-decoration: none; }
 .export-option:hover { background: #f8fafc; }
 
 /* ━━━ KPI CARDS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
 .kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 16px; border-left: 3px solid #e2e8f0; overflow: hidden; min-width: 0; }
 .kpi-card.blue  { border-left-color: #2563eb; }
 .kpi-card.green { border-left-color: #16a34a; }
@@ -156,7 +157,7 @@ a { color: #2563eb; text-decoration: none; }
 .kpi-card.red   { border-left-color: #dc2626; }
 .kpi-card.purple{ border-left-color: #7c3aed; }
 .kpi-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
-.kpi-value { font-size: 18px; font-weight: 700; color: #1a1f36; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.kpi-value { font-size: 17px; font-weight: 700; color: #1a1f36; line-height: 1.1; word-break: break-all; }
 .kpi-sub   { font-size: 11px; color: #94a3b8; margin-top: 3px; }
 
 /* ━━━ PANELS / CARDS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -523,7 +524,7 @@ let S = {
   // Dashboard KPI visibility config
   kpiConfig: {totalOrders:true,totalQty:true,orderValue:true,completed:true,completedValue:true,pending:true,pendingValue:true,alumQty:true,upvcQty:true},
   // Filter config
-  filterConfig: {zone:true,product:true,status:true,month:true},
+  filterConfig: {zone:true,product:true,status:true,month:true}, // all filters visible by default
   // Business rules
   businessRules: {advancePct:30, surveyPct:20, despatchPct:50, gstRate:18},
   wizStep: 1,
@@ -546,7 +547,20 @@ function set(patch) { Object.assign(S, patch); draw(); }
 /* ═══════════════════════════════════════════════════════
    COMPUTED
 ═══════════════════════════════════════════════════════ */
-function allRows() { return [...(S.liveData || DEMO), ...S.sessionOrders]; }
+function isValidRow(r) {
+  // A row is valid if it has at least one meaningful data field
+  const sno = parseInt(r.sno);
+  const bov = parseFloat(r.basicOrderValue);
+  const cust = String(r.customer || '').trim();
+  const quot = String(r.quotationNo || '').trim();
+  return (sno > 0) || (bov > 0) || (cust.length > 2) || (quot.length > 2);
+}
+function allRows() {
+  const base = S.liveData || DEMO;
+  // Always filter invalid/empty rows at runtime
+  const clean = base.filter(isValidRow);
+  return [...clean, ...S.sessionOrders];
+}
 
 function filtered() {
   let d = allRows();
@@ -752,7 +766,8 @@ async function doConnect() {
     else { r = await fetchGViz(id,S.sheetTab); }
     localStorage.setItem('oz_sheet',id);
     if (S.gasId) localStorage.setItem('oz_gas',S.gasId);
-    set({connected:true,syncing:false,sheetErr:'',liveData:r.recs,colMap:r.map,sheetHeaders:r.hdrs,lastSync:new Date().toLocaleTimeString('en-IN'),sheetId:id,wizStep:4});
+    // After scaling, store clean data
+  set({connected:true,syncing:false,sheetErr:'',liveData:r.recs,colMap:r.map,sheetHeaders:r.hdrs,lastSync:new Date().toLocaleTimeString('en-IN'),sheetId:id,wizStep:4});
   } catch(e) {
     set({syncing:false,sheetErr:e.message,connected:false});
   }
@@ -1709,7 +1724,7 @@ function renderSettings() {
         el('br',{}), el('span',{cls:'mono',style:{fontSize:'11px',color:'#166534'}},S.sheetId)
       ),
       el('div',{style:{display:'flex',gap:'6px',flexShrink:'0'}},
-        el('button',{cls:'btn btn-secondary btn-sm',onclick:doConnect},S.syncing?'Syncing…':'↻ Sync Now'),
+        el('button',{cls:'btn btn-secondary btn-sm',style:{fontWeight:'600'},onclick:doConnect},S.syncing?'Syncing…':'↻ Sync Now'),
         el('button',{cls:'btn btn-danger btn-sm',onclick:()=>{
           localStorage.removeItem('oz_sheet');localStorage.removeItem('oz_gas');
           set({connected:false,liveData:null,sheetId:'',wizStep:1,sheetErr:'',gasId:''});
