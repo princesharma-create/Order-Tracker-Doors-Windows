@@ -1,1186 +1,1004 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, FunnelChart, Funnel, LabelList
-} from "recharts";
+import { useState, useEffect, useMemo, useRef } from "react";
 
-// ─── OZONE LOGO (SVG inline) ─────────────────────────────────────────────────
-const OzoneLogo = ({ size = 36, white = false }) => (
-  <svg width={size * 3.2} height={size} viewBox="0 0 386 131" fill="none">
-    <circle cx="55" cy="65" r="52" fill={white ? "#fff" : "#003087"} />
-    <ellipse cx="55" cy="65" rx="30" ry="52" fill={white ? "rgba(255,255,255,0.18)" : "rgba(0,48,135,0.3)"} stroke={white ? "rgba(255,255,255,0.6)" : "#1a4a9a"} strokeWidth="2" />
-    <path d="M20 42 Q55 18 90 42 Q110 65 90 88 Q55 112 20 88 Q0 65 20 42Z" fill="none" stroke={white ? "rgba(255,255,255,0.8)" : "#0051c8"} strokeWidth="2.5" />
-    <text x="118" y="90" fontFamily="Arial,sans-serif" fontWeight="900" fontSize="64" fill={white ? "#fff" : "#003087"} letterSpacing="-2">OZONE</text>
-    <circle cx="374" cy="18" r="7" fill="none" stroke={white ? "rgba(255,255,255,0.8)" : "#003087"} strokeWidth="2.5" />
-    <circle cx="374" cy="18" r="3" fill={white ? "rgba(255,255,255,0.8)" : "#003087"} />
-  </svg>
-);
+const LOGO_B64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCACDAYIDASIAAhEBAxEB/8QAHgABAAICAwEBAQAAAAAAAAAAAAgJBQcEBgoDAQL/xABaEAABAwMDAgMCBgsIDwUJAAABAgMEAAUGBxESCCEJEzEiQRQVMlFhcRYXOEJScnaBkaG0GSM3V2KVs9IYJCU0NlNWdYKSlqKxtdMzc5TBxEVUY4OEk7Lw8f/EABsBAQACAwEBAAAAAAAAAAAAAAAFBgMEBwEC/8QAPxEAAQMDAAUKAwcDBAIDAAAAAQACAwQFEQYhMUFREiJhcYGRobHB0RMU4SMyNDVyovAzsuIWQlLxFSRTY4L/2gAMAwEAAhEDEQA/ALU6UpREpSlESlKURKUr8UpKEla1BKUjcknYAURftYnJ8sxfCbO9kOY5HbbHbGNg5MuEpEdlJPoCtZA3PuHqa0BrF1F6xTXZGI9Lmit8y25p9hzJbjCVFsrW/wD7s6+ppEtQ2PtpWGhuk8nO6aihkHQt1ua5XZGV6tZdYzcVbkC+XxbhjJVtyQ01FacZaHYHi3xSSPz1L0lsZIA+qlbG3hnLu7d29yjKqvkj5lNEXu7h3+ykZqD4mvTziT7kHFGb/mUhHJPm2+II8UKHuLsgoUQfcpCFg+oO22+j754suaSFKGN6M2SAnf2TOu7ss7fOQhtr9H/9r5wPCbzx1sG56x2GMv3pYtTz4H51OI/4V95fhMZe20TA1ss77m3ZL1jdaST9YeV/wqbhj0ei1Odyj08r0AChJpL/AC62tDR0cn1JXX4nisa2If5TtPcIeZ3+Q03LaVt+MXlD9VbCw/xZbQ68lnUHRqdEZG3KTZLoiSs/Psy8hoD/AO4a0jmfhqdTOLsOy7NCxzKm0ElLdpufB8o+cokoaTvt34pUo/NuajVlGJ5RhF6exzMscudjujA5OQ7jFXHeCSSAoJWASk7HZQ3B9xNSkdts1cMQgE9BOe7PooyS43mh1zZx0gY7/qrsdHup/RDXX+1tPs4iv3QJK12iWDFnpAG6iGXNlOJAI3W3yQPwq2rXnojSZMKUxOhSHY8mM4l5h9lZQ024g7pWhQ7pUCAQQdwRVjnQ311XrLr1b9FNa7mJdzl/vFhyB4hLkpwD2Ysk+inCBsh3sVkBKt1qClwd10bdSsM1MeU0bQdo6elTdr0iZVvENQOS47DuPsp90pSqqrMlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUrjz7hAtUJ65XSdHhxI6C48/IdS226kepUpRAA+k1onL+u/pWw2QqHJ1Vh3WQNyE2WM/cEH6nmUKZ/36zQ081QcRMLuoErFLPFAMyuA6zhb+pUTB4nHTKZHklWWBH+O+KBw/R5nL9Vd6w3rn6WM2eESFqzb7ZIIBLd7ZetqRv6DzZCUtE/Us1sPtlZGOU6J2OorAy4Ukhw2VpPWFvmlfKLLizozUyDJakR3khbTrSwtC0n0KVDsR9Ir61orcSulasaN6c63Yw5ieo+NR7pE7qjvEcZEN0jbzWHR7Ta/TuDsR2UCkkHutK+mPdG4PYcEb18vY17S1wyCqR+qLprybppz4Y7cZC7jYbolyRYrqUcfhTKSAttwDsl5vkkLA7EKQobBXEagjSZUKSzNgyno0mO4l5h9lZQ024g7pWhQ7pUCAQQdwRVjnQ311XrLr1b9FNa7mJdzl/vFhyB4hLkpwD2Ysk+inCBsh3sVkBKt1qClwd10bdSsM1MeU0bQdo6elTdr0iZVvENQOS47DuPsp90pSqqrMlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUrjz7hAtUJ65XSdHhxI6C48/IdS226kepUpRAA+k1onL+u/pWw2QqHJ1Vh3WQNyE2WM/cEH6nmUKZ/36zQ081QcRMLuoErFLPFAMyuA6zhb+pUTB4nHTKZHklWWBH+O+KBw/R5nL9Vd6w3rn6WM2eESFqzb7ZIIBLd7ZetqRv6DzZCUtE/Us1sPtlZGOU6J2OorAy4Ukhw2VpPWFvmlfKLLizozUyDJakR3khbTrSwtC0n0KVDsR9Ir61orcSulasaN6c63Yw5ieo+NR7pE7qjvEcZEN0jbzWHR7Ta/TuDsR2UCkkHutK+mPdG4PYcEb18vY17S1wyCqR+qLprybppz4Y7cZC7jYbolyRYrqUcfhTKSAttwDsl5vkkLA7EKQobBXEagjSZUKSzNgyno0mO4l5h9lZQ024g7pWhQ7pUCAQQdwRVjnQ311XrLr1b9FNa7mJdzl/vFhyB4hLkpwD2Ysk+inCBsh3sVkBKt1qClwd10bdSsM1MeU0bQdo6elTdr0iZVvENQOS47DuPsp90pSqqrMlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUrjz7hAtUJ65XSdHhxI6C48/IdS226kepUpRAA+k1onL+u/pWw2QqHJ1Vh3WQNyE2WM/cEH6nmUKZ/36zQ081QcRMLuoErFLPFAMyuA6zhb+pUTB4nHTKZHklWWBH+O+KBw/R5nL9Vd6w3rn6WM2eESFqzb7ZIIBLd7ZetqRv6DzZCUtE/Us1sPtlZGOU6J2OorAy4Ukhw2VpPWFvmlfKLLizozUyDJakR3khbTrSwtC0n0KVDsR9Ir61orcSulasaN6c63Yw5ieo+NR7pE7qjvEcZEN0jbzWHR7Ta/TuDsR2UCkkHutK+mPdG4PYcEb18vY17S1wyCqR+qLprybppz4Y7cZC7jYbolyRYrqUcfhTKSAttwDsl5vkkLA7EKQobBXEagjSZUKSzNgyno0mO4l5h9lZQ024g7pWhQ7pUCAQQdwRVjnQ311XrLr1b9FNa7mJdzl/vFhyB4hLkpwD2Ysk+inCBsh3sVkBKt1qClwd10bdSsM1MeU0bQdo6elTdr0iZVvENQOS47DuPsp90pSqqrMlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIlKUoiUpSiJSlKIv/Z";
 
-// ─── BRAND COLORS ────────────────────────────────────────────────────────────
-const C = {
-  navy: "#003087",
-  navyDark: "#001d5c",
-  navyLight: "#1a4a9a",
-  gold: "#c89b2a",
-  goldLight: "#f0c040",
-  steel: "#5a7fa8",
-  sky: "#e8f0f8",
-  skyDark: "#d0e2f4",
-  mint: "#e4f5ef",
-  mintDark: "#0d8c5e",
-  rose: "#fce8e8",
-  roseDark: "#c0392b",
-  amber: "#fff3cd",
-  amberDark: "#9a6700",
-  ink: "#1a2340",
-  slate: "#4a5568",
-  mist: "#f0f4f8",
-  white: "#ffffff",
-  border: "#dde5ef",
-  success: "#1a8f5a",
-  warning: "#b85a00",
-  danger: "#c0392b",
-};
+const OZONE_NAVY = "#002060";
+const OZONE_GOLD = "#C9A227";
+const OZONE_LIGHT = "#EEF3FF";
 
-// ─── SAMPLE DATA (realistic Ozone patterns, no actual company data) ──────────
-const generateOrders = () => {
+// ─── Synthetic demo data (mimics the 94-column schema) ───
+function generateDemoData() {
   const zones = ["North", "South", "East", "West", "Central"];
-  const zms = { North: "Rajesh Kumar", South: "Suresh Iyer", East: "Amit Banerjee", West: "Prakash Mehta", Central: "Vinod Sharma" };
+  const zms = { North: "Rajesh Kumar", South: "Priya Menon", East: "Amit Das", West: "Sunita Patil", Central: "Vikram Singh" };
   const products = ["Aluminium Doors & Windows", "UPVC Windows"];
-  const partners = ["Stellar Build Solutions", "Apex Fenestration", "Premier Glass Works", "Vision Interiors", "Skyline Facades", "Horizon Contractors", "Elite Windows Co.", "Supreme Aluminium", "NextGen Fenestration", "BuildRight Partners"];
-  const statuses = ["Done", "Done", "Done", "In Production", "Survey", "Dispatch", "Installation", "Pending", "Done", "Done"];
-  const customers = ["Lodha Developers", "Prestige Group", "Godrej Properties", "DLF Ltd", "Oberoi Realty", "Brigade Group", "Sobha Ltd", "Puravankara", "Mahindra Lifespace", "Shapoorji Pallonji", "Hiranandani Group", "Phoenix Mills", "K Raheja Corp", "Emaar India", "Sunteck Realty"];
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const cities = ["Delhi", "Mumbai", "Bangalore", "Hyderabad", "Chennai", "Pune", "Kolkata", "Ahmedabad", "Jaipur", "Lucknow"];
-  const states = { North: ["Delhi", "Haryana", "UP", "Punjab"], South: ["Karnataka", "TN", "AP", "Telangana"], East: ["WB", "Odisha", "Bihar"], West: ["Maharashtra", "Gujarat", "Rajasthan"], Central: ["MP", "CG", "UP"] };
+  const partners = ["BuildMart Delhi", "GlassTech Mumbai", "WindowWorld Pune", "FencoIndia Hyderabad", "ArchiGlass Kolkata", "ProBuild Chennai", "AlumFab Bangalore", "VisionGlass Ahmedabad"];
+  const salesPersons = ["Ankit Sharma", "Deepa Nair", "Rohit Verma", "Kavita Joshi", "Suresh Pillai", "Meena Iyer", "Rahul Gupta", "Sneha Reddy"];
+  const statuses = ["Done", "Done", "Done", "Survey", "Production", "Dispatch", "Installation", "Pending", "Quotation Sent"];
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const customers = ["Prestige Builders", "Sobha Developers", "DLF Homes", "Godrej Properties", "Puravankara Projects", "Brigade Group", "Mahindra Lifespace", "Tata Housing", "Lodha Group", "Shapoorji Pallonji"];
 
-  return Array.from({ length: 180 }, (_, i) => {
-    const zone = zones[i % 5];
+  return Array.from({ length: 120 }, (_, i) => {
+    const zone = zones[i % zones.length];
     const product = products[i % 2];
-    const qty = Math.floor(Math.random() * 120) + 8;
-    const basicValue = (qty * (product === "Aluminium Doors & Windows" ? 18500 : 14200) * (0.85 + Math.random() * 0.3));
-    const dateMonth = Math.floor(Math.random() * 12);
-    const stateList = states[zone];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const sp = ["Ramesh S", "Priya N", "Deepak K", "Sunita P", "Arjun V", "Kavita R", "Manish T", "Pooja G"];
+    const basicVal = Math.round((Math.random() * 25 + 2) * 100) / 100;
+    const month = months[Math.floor(Math.random() * 12)];
+    const dateOfOrder = new Date(2024, months.indexOf(month), Math.floor(Math.random() * 28) + 1);
     return {
       sno: i + 1,
-      zone,
       zm: zms[zone],
       rsm: `RSM-${zone}`,
-      salesPerson: sp[i % sp.length],
-      month: months[dateMonth],
-      quarter: `Q${Math.ceil((dateMonth + 1) / 3)}`,
-      year: dateMonth >= 9 ? "2024-25" : "2025-26",
-      dateOfOrder: new Date(2025, dateMonth, Math.floor(Math.random() * 28) + 1),
+      month,
+      quarter: `Q${Math.ceil((months.indexOf(month) + 1) / 3)}`,
+      year: 2024,
       status,
       product,
+      zone,
+      salesPerson: salesPersons[i % salesPersons.length],
       partner: partners[i % partners.length],
       customer: customers[i % customers.length],
-      totalQty: qty,
-      basicOrderValue: Math.round(basicValue),
-      totalOrderValue: Math.round(basicValue * 1.18),
-      advancePayment: Math.round(basicValue * 0.3),
-      surveyPayment: Math.round(basicValue * 0.2),
-      dispatchPayment: Math.round(basicValue * 0.3),
-      quotationNumber: `QT-2025-${String(i + 1001).padStart(5, "0")}`,
-      soNumber: status === "Done" || status === "In Production" ? `SO-${String(i + 5001).padStart(6, "0")}` : null,
-      city: cities[i % cities.length],
-      state: stateList[i % stateList.length],
+      totalQty: Math.floor(Math.random() * 20) + 2,
+      basicOrderValue: basicVal,
+      totalOrderValue: Math.round(basicVal * 1.18 * 100) / 100,
+      quotationNumber: `QT-2024-${String(i + 1).padStart(4, "0")}`,
+      invoiceNo: status === "Done" ? `INV-2024-${String(i + 1).padStart(4, "0")}` : "",
+      dateOfOrder,
+      advancePercent: 30,
+      surveyPercent: 20,
+      despatchPercent: 50,
+      location: `City-${(i % 10) + 1}`,
+      category: product === "Aluminium Doors & Windows" ? "Premium" : "Standard",
     };
   });
-};
+}
 
-const ALL_ORDERS = generateOrders();
+const ALL_DATA = generateDemoData();
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
-const fmt = (n, prefix = "₹") => {
-  if (!n && n !== 0) return "—";
-  if (n >= 10000000) return `${prefix}${(n / 10000000).toFixed(2)} Cr`;
-  if (n >= 100000) return `${prefix}${(n / 100000).toFixed(2)} L`;
-  return `${prefix}${n.toLocaleString("en-IN")}`;
-};
-const fmtShort = (n) => {
-  if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr`;
-  if (n >= 100000) return `${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
-  return n;
-};
+// ─── Helpers ───
+const fmt = (n) => n >= 1 ? `₹${n.toFixed(1)}L` : `₹${(n * 100).toFixed(0)}K`;
+const fmtFull = (n) => `₹${n.toFixed(2)} Lakhs`;
+const pct = (a, b) => b === 0 ? 0 : Math.round((a / b) * 100);
 
-// ─── NAVIGATION ──────────────────────────────────────────────────────────────
-const PAGES = [
-  { id: "dashboard", label: "Dashboard", icon: "📊" },
-  { id: "orders", label: "Orders", icon: "📋" },
-  { id: "analytics", label: "Analytics", icon: "📈" },
-  { id: "partners", label: "Partners", icon: "🤝" },
-  { id: "payments", label: "Payments", icon: "💰" },
-  { id: "funnel", label: "Sales Funnel", icon: "🔽" },
+// ─── Auth ───
+function LoginScreen({ onLogin }) {
+  const [user, setUser] = useState("");
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = () => {
+    if (!user || !pass) { setErr("Please enter credentials."); return; }
+    setLoading(true);
+    setTimeout(() => {
+      if (user === "admin" && pass === "ozone123") onLogin({ name: "Admin User", role: "Administrator" });
+      else if (user === "sales" && pass === "ozone123") onLogin({ name: "Sales Manager", role: "Sales" });
+      else if (user === "ops" && pass === "ozone123") onLogin({ name: "Operations Head", role: "Operations" });
+      else { setErr("Invalid credentials. Try admin/ozone123"); setLoading(false); }
+    }, 800);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${OZONE_NAVY} 0%, #1a3a7a 60%, #0d2050 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui,sans-serif" }}>
+      <div style={{ width: 420, background: "#fff", borderRadius: 16, boxShadow: "0 32px 80px rgba(0,0,0,0.4)", overflow: "hidden" }}>
+        <div style={{ background: OZONE_NAVY, padding: "32px 32px 24px", textAlign: "center" }}>
+          <img src={`data:image/jpeg;base64,${LOGO_B64}`} alt="Ozone" style={{ height: 52, marginBottom: 16, filter: "brightness(0) invert(1)" }} />
+          <div style={{ color: "#fff", fontSize: 13, letterSpacing: 3, textTransform: "uppercase", opacity: 0.7 }}>Enterprise Platform</div>
+        </div>
+        <div style={{ padding: "32px" }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: OZONE_NAVY, marginBottom: 6 }}>Welcome back</div>
+          <div style={{ fontSize: 13, color: "#666", marginBottom: 28 }}>Order Tracker & Business Intelligence</div>
+          {err && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#DC2626", marginBottom: 16 }}>{err}</div>}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>USERNAME</label>
+            <input value={user} onChange={e => setUser(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="admin / sales / ops" style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
+          </div>
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>PASSWORD</label>
+            <input type="password" value={pass} onChange={e => setPass(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="ozone123" style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
+          </div>
+          <button onClick={submit} disabled={loading} style={{ width: "100%", padding: "12px", background: loading ? "#6B7280" : OZONE_NAVY, color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
+            {loading ? "Signing in…" : "Sign In →"}
+          </button>
+          <div style={{ marginTop: 20, padding: "14px", background: "#F8FAFF", borderRadius: 8, fontSize: 12, color: "#555" }}>
+            <strong>Demo accounts:</strong><br />
+            admin / ozone123 · sales / ozone123 · ops / ozone123
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sidebar ───
+const NAV = [
+  { id: "dashboard", icon: "⊞", label: "Executive Dashboard" },
+  { id: "orders", icon: "📋", label: "Order Management" },
+  { id: "funnel", icon: "△", label: "Sales Funnel" },
+  { id: "analytics", icon: "📊", label: "Analytics" },
+  { id: "partners", icon: "🤝", label: "Partner Performance" },
+  { id: "payments", icon: "₹", label: "Payment Tracker" },
+  { id: "punch", icon: "+", label: "Order Punch" },
+  { id: "settings", icon: "⚙", label: "Settings & Admin" },
 ];
 
-// ─── STYLES ──────────────────────────────────────────────────────────────────
-const styles = `
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body, #root { font-family: 'Segoe UI', Arial, sans-serif; background: ${C.mist}; color: ${C.ink}; min-height: 100vh; }
-
-.app { display: flex; flex-direction: column; min-height: 100vh; }
-
-/* AUTH */
-.auth-bg { min-height: 100vh; background: linear-gradient(135deg, ${C.navyDark} 0%, ${C.navy} 55%, ${C.navyLight} 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-.auth-orb { position: absolute; border-radius: 50%; opacity: 0.08; }
-.auth-orb-1 { width: 500px; height: 500px; background: #fff; top: -150px; right: -100px; }
-.auth-orb-2 { width: 300px; height: 300px; background: #fff; bottom: -80px; left: -80px; }
-.auth-card { background: rgba(255,255,255,0.97); border-radius: 20px; padding: 48px 44px; width: 420px; box-shadow: 0 24px 80px rgba(0,0,0,0.3); position: relative; z-index: 1; }
-.auth-logo-wrap { display: flex; justify-content: center; margin-bottom: 28px; }
-.auth-title { text-align: center; font-size: 22px; font-weight: 700; color: ${C.navyDark}; margin-bottom: 6px; }
-.auth-sub { text-align: center; font-size: 13px; color: ${C.slate}; margin-bottom: 32px; }
-.auth-label { display: block; font-size: 12px; font-weight: 600; color: ${C.slate}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-.auth-input { width: 100%; padding: 11px 14px; border: 1.5px solid ${C.border}; border-radius: 8px; font-size: 14px; color: ${C.ink}; background: #fafbfd; transition: border-color 0.2s; outline: none; }
-.auth-input:focus { border-color: ${C.navy}; background: #fff; }
-.auth-btn { width: 100%; padding: 13px; background: ${C.navy}; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
-.auth-btn:hover { background: ${C.navyDark}; }
-.auth-err { background: ${C.rose}; color: ${C.roseDark}; border-radius: 6px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; border: 1px solid ${C.roseDark}; }
-.auth-hint { text-align: center; font-size: 12px; color: #aaa; margin-top: 20px; }
-.auth-roles { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; justify-content: center; }
-.auth-role-chip { font-size: 11px; background: ${C.sky}; color: ${C.navy}; padding: 3px 10px; border-radius: 20px; border: 1px solid ${C.border}; }
-
-/* TOPBAR */
-.topbar { background: ${C.navyDark}; color: #fff; height: 58px; display: flex; align-items: center; padding: 0 24px; gap: 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.18); }
-.topbar-search { flex: 1; max-width: 440px; position: relative; }
-.topbar-search input { width: 100%; padding: 8px 14px 8px 36px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 13.5px; outline: none; }
-.topbar-search input::placeholder { color: rgba(255,255,255,0.5); }
-.topbar-search input:focus { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.5); }
-.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.6; font-size: 15px; }
-.search-results { position: absolute; top: 42px; left: 0; right: 0; background: #fff; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); z-index: 200; max-height: 320px; overflow-y: auto; }
-.search-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid ${C.border}; }
-.search-item:hover { background: ${C.sky}; }
-.search-item-main { font-size: 13px; font-weight: 600; color: ${C.ink}; }
-.search-item-sub { font-size: 11px; color: ${C.slate}; }
-.topbar-right { display: flex; align-items: center; gap: 14px; margin-left: auto; }
-.topbar-badge { background: ${C.gold}; color: #fff; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700; }
-.topbar-user { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, ${C.gold}, ${C.goldLight}); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; }
-.user-name { font-size: 13px; font-weight: 500; }
-
-/* SIDENAV */
-.layout { display: flex; flex: 1; }
-.sidenav { width: 220px; background: ${C.navyDark}; color: #fff; display: flex; flex-direction: column; padding: 16px 0; min-height: calc(100vh - 58px); position: sticky; top: 58px; height: calc(100vh - 58px); overflow-y: auto; }
-.sidenav-section { padding: 6px 16px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.35); margin-top: 8px; }
-.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; font-size: 13.5px; color: rgba(255,255,255,0.72); border-left: 3px solid transparent; transition: all 0.15s; }
-.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-.nav-item.active { background: rgba(255,255,255,0.12); color: #fff; border-left-color: ${C.goldLight}; font-weight: 600; }
-.nav-icon { font-size: 16px; width: 20px; text-align: center; }
-
-/* MAIN */
-.main { flex: 1; padding: 24px; min-width: 0; overflow-x: hidden; }
-.page-header { margin-bottom: 22px; }
-.page-title { font-size: 22px; font-weight: 700; color: ${C.navyDark}; }
-.page-subtitle { font-size: 13px; color: ${C.slate}; margin-top: 3px; }
-
-/* FILTER BAR */
-.filter-bar { background: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border: 1px solid ${C.border}; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-.filter-label { font-size: 12px; font-weight: 600; color: ${C.slate}; text-transform: uppercase; letter-spacing: 0.4px; margin-right: 4px; }
-select.filter-select { padding: 7px 28px 7px 10px; border: 1.5px solid ${C.border}; border-radius: 7px; font-size: 13px; color: ${C.ink}; background: #fafbfd; cursor: pointer; outline: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235a7fa8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
-select.filter-select:focus { border-color: ${C.navy}; }
-.filter-clear { padding: 7px 14px; background: ${C.rose}; color: ${C.roseDark}; border: 1px solid ${C.roseDark}; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
-
-/* KPI CARDS */
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 14px; margin-bottom: 22px; }
-.kpi-card { background: #fff; border-radius: 12px; padding: 18px; border: 1px solid ${C.border}; position: relative; overflow: hidden; transition: box-shadow 0.2s; }
-.kpi-card:hover { box-shadow: 0 4px 20px rgba(0,48,135,0.1); }
-.kpi-card-icon { position: absolute; right: 14px; top: 14px; font-size: 22px; opacity: 0.18; }
-.kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: ${C.slate}; margin-bottom: 8px; }
-.kpi-value { font-size: 22px; font-weight: 800; color: ${C.navyDark}; line-height: 1.1; }
-.kpi-sub { font-size: 12px; color: ${C.slate}; margin-top: 6px; }
-.kpi-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 12px; margin-top: 6px; }
-.kpi-trend.up { background: ${C.mint}; color: ${C.mintDark}; }
-.kpi-trend.down { background: ${C.rose}; color: ${C.roseDark}; }
-.kpi-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 12px 0 0 12px; }
-
-/* CHART CARDS */
-.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; margin-bottom: 22px; }
-.chart-card { background: #fff; border-radius: 14px; padding: 22px; border: 1px solid ${C.border}; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-.chart-title { font-size: 14px; font-weight: 700; color: ${C.ink}; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
-.chart-badge { font-size: 11px; background: ${C.sky}; color: ${C.navy}; padding: 2px 8px; border-radius: 12px; }
-
-/* DATA TABLE */
-.table-card { background: #fff; border-radius: 14px; border: 1px solid ${C.border}; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 22px; }
-.table-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid ${C.border}; background: #fafbfd; }
-.table-title { font-size: 14px; font-weight: 700; color: ${C.ink}; }
-.table-actions { display: flex; gap: 8px; }
-.btn-sm { padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid; }
-.btn-primary { background: ${C.navy}; color: #fff; border-color: ${C.navy}; }
-.btn-outline { background: #fff; color: ${C.navy}; border-color: ${C.border}; }
-.btn-outline:hover { background: ${C.sky}; }
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th { background: #f4f7fc; padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${C.slate}; border-bottom: 1px solid ${C.border}; white-space: nowrap; cursor: pointer; }
-thead th:hover { background: ${C.sky}; color: ${C.navy}; }
-tbody td { padding: 11px 14px; border-bottom: 1px solid #f0f4f8; color: ${C.ink}; white-space: nowrap; }
-tbody tr:hover { background: #f8fafd; }
-tbody tr:last-child td { border-bottom: none; }
-.table-footer { padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; background: #fafbfd; border-top: 1px solid ${C.border}; font-size: 12px; color: ${C.slate}; }
-.pagination { display: flex; gap: 4px; }
-.pg-btn { padding: 5px 10px; border-radius: 5px; border: 1px solid ${C.border}; background: #fff; font-size: 12px; cursor: pointer; }
-.pg-btn.active { background: ${C.navy}; color: #fff; border-color: ${C.navy}; }
-
-/* STATUS BADGES */
-.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-.badge-done { background: ${C.mint}; color: ${C.mintDark}; }
-.badge-production { background: #e8f0ff; color: #3050a0; }
-.badge-pending { background: ${C.amber}; color: ${C.amberDark}; }
-.badge-dispatch { background: #f0e8ff; color: #6030a0; }
-.badge-survey { background: #e8f8ff; color: #0070a0; }
-.badge-install { background: #fff0e8; color: #a05010; }
-
-/* FUNNEL */
-.funnel-wrap { padding: 10px 0; }
-.funnel-stage { display: flex; align-items: center; margin-bottom: 10px; position: relative; }
-.funnel-bar-wrap { flex: 1; }
-.funnel-bar-bg { background: #f0f4f8; border-radius: 6px; overflow: hidden; height: 44px; }
-.funnel-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding: 0 14px; transition: width 1s ease; }
-.funnel-stage-name { font-size: 12.5px; font-weight: 600; color: #fff; }
-.funnel-stage-count { font-size: 11px; color: rgba(255,255,255,0.8); margin-left: 8px; }
-.funnel-meta { width: 140px; padding-left: 12px; font-size: 12px; color: ${C.slate}; text-align: right; }
-.funnel-pct { font-weight: 700; color: ${C.navyDark}; }
-
-/* PARTNER TABLE */
-.partner-rank { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; background: ${C.sky}; color: ${C.navy}; }
-.partner-rank.gold { background: #fef3c7; color: #92400e; }
-.partner-rank.silver { background: #f1f5f9; color: #64748b; }
-.partner-rank.bronze { background: #fef3e8; color: #9a3412; }
-
-/* PAYMENT */
-.payment-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
-.payment-card { background: #fff; border-radius: 12px; padding: 18px; border: 1px solid ${C.border}; }
-.payment-stage { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #fafbfd; border-radius: 10px; margin-bottom: 8px; border: 1px solid ${C.border}; }
-.payment-stage-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-.progress-bar { height: 6px; background: #e8edf5; border-radius: 3px; overflow: hidden; margin-top: 8px; }
-.progress-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
-
-/* DETAIL MODAL */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.modal-card { background: #fff; border-radius: 16px; padding: 0; max-width: 760px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,0.25); }
-.modal-header { background: ${C.navyDark}; color: #fff; padding: 20px 24px; border-radius: 16px 16px 0 0; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-.modal-close { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
-.modal-body { padding: 24px; }
-.timeline { position: relative; padding-left: 24px; }
-.timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: ${C.border}; }
-.timeline-item { position: relative; margin-bottom: 18px; }
-.timeline-dot { position: absolute; left: -20px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; font-size: 9px; }
-.timeline-dot.done { background: ${C.mint}; border-color: ${C.mintDark}; color: ${C.mintDark}; }
-.timeline-dot.active { background: ${C.navy}; border-color: ${C.navy}; color: #fff; }
-.timeline-dot.pending { background: #fff; border-color: ${C.border}; color: ${C.slate}; }
-.timeline-label { font-size: 13px; font-weight: 600; color: ${C.ink}; }
-.timeline-date { font-size: 11px; color: ${C.slate}; }
-.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.info-row { display: flex; flex-direction: column; gap: 3px; }
-.info-key { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: ${C.slate}; }
-.info-val { font-size: 14px; color: ${C.ink}; font-weight: 500; }
-
-/* MISC */
-.section-divider { height: 1px; background: ${C.border}; margin: 22px 0; }
-.empty-state { text-align: center; padding: 48px; color: ${C.slate}; }
-.empty-icon { font-size: 40px; margin-bottom: 12px; }
-.tag { display: inline-block; background: ${C.sky}; color: ${C.navy}; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; margin: 2px; }
-.product-al { background: #e8f0ff; color: #1a3888; }
-.product-up { background: #e8fff4; color: #1a5c36; }
-
-@media (max-width: 900px) {
-  .sidenav { width: 60px; }
-  .nav-item span { display: none; }
-  .sidenav-section { display: none; }
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-}
-`;
-
-// ─── STATUS CONFIG ────────────────────────────────────────────────────────────
-const statusConfig = {
-  "Done": { cls: "badge-done", icon: "✓", color: C.mintDark },
-  "In Production": { cls: "badge-production", icon: "⚙", color: "#3050a0" },
-  "Pending": { cls: "badge-pending", icon: "⏳", color: C.amberDark },
-  "Dispatch": { cls: "badge-dispatch", icon: "🚚", color: "#6030a0" },
-  "Survey": { cls: "badge-survey", icon: "📐", color: "#0070a0" },
-  "Installation": { cls: "badge-install", icon: "🔧", color: "#a05010" },
-};
-const getBadge = (status) => {
-  const cfg = statusConfig[status] || { cls: "badge-pending", icon: "•" };
-  return <span className={`badge ${cfg.cls}`}>{cfg.icon} {status}</span>;
-};
-
-// ─── LOGIN PAGE ───────────────────────────────────────────────────────────────
-function LoginPage({ onLogin }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  const USERS = {
-    "admin": { pass: "ozone2025", role: "Admin", name: "Admin User" },
-    "director": { pass: "ozone@dir", role: "Director", name: "Alok Aggarwal" },
-    "sales": { pass: "sales123", role: "Sales Manager", name: "Sales Manager" },
-    "ops": { pass: "ops123", role: "Operations", name: "Operations Head" },
-  };
-
-  const handleLogin = () => {
-    const u = USERS[username.toLowerCase()];
-    if (u && u.pass === password) {
-      onLogin({ username, role: u.role, name: u.name });
-    } else {
-      setError("Invalid credentials. Try: admin / ozone2025");
-      setTimeout(() => setError(""), 3000);
-    }
-  };
-
+function Sidebar({ active, onNav, user, onLogout, collapsed, setCollapsed }) {
   return (
-    <div className="auth-bg">
-      <div className="auth-orb auth-orb-1" />
-      <div className="auth-orb auth-orb-2" />
-      <div className="auth-card">
-        <div className="auth-logo-wrap"><OzoneLogo size={42} /></div>
-        <div className="auth-title">Order Intelligence Platform</div>
-        <div className="auth-sub">Enterprise Business Intelligence · Secure Login</div>
-        {error && <div className="auth-err">⚠ {error}</div>}
-        <div style={{ marginBottom: 16 }}>
-          <label className="auth-label">Username</label>
-          <input className="auth-input" placeholder="Enter username" value={username}
-            onChange={e => setUsername(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleLogin()} />
+    <div style={{ width: collapsed ? 64 : 220, background: OZONE_NAVY, color: "#fff", display: "flex", flexDirection: "column", transition: "width .2s", flexShrink: 0, fontFamily: "system-ui,sans-serif" }}>
+      <div style={{ padding: collapsed ? "20px 12px" : "20px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 10 }}>
+        {!collapsed && <img src={`data:image/jpeg;base64,${LOGO_B64}`} alt="Ozone" style={{ height: 32, filter: "brightness(0) invert(1)" }} />}
+        <button onClick={() => setCollapsed(!collapsed)} style={{ marginLeft: "auto", background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 6, width: 28, height: 28, cursor: "pointer", fontSize: 14 }}>
+          {collapsed ? "›" : "‹"}
+        </button>
+      </div>
+      <nav style={{ flex: 1, padding: "12px 8px", overflowY: "auto" }}>
+        {NAV.map(n => (
+          <button key={n.id} onClick={() => onNav(n.id)}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "9px 10px", borderRadius: 8, border: "none", background: active === n.id ? "rgba(255,255,255,0.15)" : "transparent", color: active === n.id ? "#fff" : "rgba(255,255,255,0.65)", cursor: "pointer", fontSize: 13, marginBottom: 2, textAlign: "left" }}>
+            <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{n.icon}</span>
+            {!collapsed && <span style={{ fontWeight: active === n.id ? 600 : 400 }}>{n.label}</span>}
+          </button>
+        ))}
+      </nav>
+      {!collapsed && (
+        <div style={{ padding: "16px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>{user.role}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{user.name}</div>
+          <button onClick={onLogout} style={{ width: "100%", padding: "7px", background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Sign Out</button>
         </div>
-        <div style={{ marginBottom: 20 }}>
-          <label className="auth-label">Password</label>
-          <input className="auth-input" type="password" placeholder="Enter password" value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleLogin()} />
-        </div>
-        <button className="auth-btn" onClick={handleLogin}>Sign In to Platform →</button>
-        <div className="auth-hint">
-          Demo Credentials
-          <div className="auth-roles">
-            <span className="auth-role-chip">admin / ozone2025</span>
-            <span className="auth-role-chip">director / ozone@dir</span>
-            <span className="auth-role-chip">sales / sales123</span>
-          </div>
-        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Top Bar ───
+function TopBar({ page, user, search, setSearch, data }) {
+  const titles = { dashboard: "Executive Dashboard", orders: "Order Management", funnel: "Sales Funnel", analytics: "Analytics", partners: "Partner Performance", payments: "Payment Tracker", punch: "New Order", settings: "Settings & Admin" };
+  return (
+    <div style={{ background: "#fff", borderBottom: "1px solid #E5E7EB", padding: "0 24px", height: 56, display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: OZONE_NAVY }}>{titles[page]}</div>
+      </div>
+      <div style={{ position: "relative", width: 320 }}>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#9CA3AF" }}>🔍</span>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search orders, partners, customers…" style={{ width: "100%", padding: "8px 12px 8px 34px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ width: 34, height: 34, borderRadius: "50%", background: OZONE_NAVY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600 }}>{user.name.charAt(0)}</div>
+        <div style={{ fontSize: 12, color: "#6B7280" }}>{user.role}</div>
       </div>
     </div>
   );
 }
 
-// ─── KPI CARD ─────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, icon, accent, trend, trendDir }) {
+// ─── Filter Bar ───
+function FilterBar({ filters, setFilters, data }) {
+  const zones = ["All", ...new Set(data.map(d => d.zone))];
+  const products = ["All", ...new Set(data.map(d => d.product))];
+  const statuses = ["All", ...new Set(data.map(d => d.status))];
+  const months = ["All", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const sel = (k, v) => setFilters(f => ({ ...f, [k]: v }));
+  const s = { padding: "6px 10px", border: "1.5px solid #E5E7EB", borderRadius: 6, fontSize: 12, background: "#fff", color: OZONE_NAVY, cursor: "pointer" };
   return (
-    <div className="kpi-card">
-      <div className="kpi-accent" style={{ background: accent }} />
-      <div className="kpi-card-icon">{icon}</div>
-      <div className="kpi-label">{label}</div>
-      <div className="kpi-value">{value}</div>
-      {sub && <div className="kpi-sub">{sub}</div>}
-      {trend && <div className={`kpi-trend ${trendDir}`}>{trendDir === "up" ? "▲" : "▼"} {trend}</div>}
+    <div style={{ background: "#F8FAFF", borderBottom: "1px solid #E5E7EB", padding: "8px 24px", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 1 }}>Filters:</span>
+      <select style={s} value={filters.zone} onChange={e => sel("zone", e.target.value)}>{zones.map(z => <option key={z}>{z}</option>)}</select>
+      <select style={s} value={filters.product} onChange={e => sel("product", e.target.value)}>{products.map(p => <option key={p}>{p}</option>)}</select>
+      <select style={s} value={filters.status} onChange={e => sel("status", e.target.value)}>{statuses.map(s => <option key={s}>{s}</option>)}</select>
+      <select style={s} value={filters.month} onChange={e => sel("month", e.target.value)}>{months.map(m => <option key={m}>{m}</option>)}</select>
+      <button onClick={() => setFilters({ zone: "All", product: "All", status: "All", month: "All" })} style={{ ...s, background: "#FFF0F0", borderColor: "#FECACA", color: "#DC2626" }}>✕ Clear</button>
     </div>
   );
 }
 
-// ─── FILTER BAR ───────────────────────────────────────────────────────────────
-function FilterBar({ filters, onChange, orders }) {
-  const zones = ["All", ...new Set(orders.map(o => o.zone))];
-  const products = ["All", ...new Set(orders.map(o => o.product))];
-  const months = ["All", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const statuses = ["All", ...new Set(orders.map(o => o.status))];
-  const quarters = ["All", "Q1", "Q2", "Q3", "Q4"];
-
+// ─── KPI Card ───
+function KpiCard({ label, value, sub, icon, color, trend }) {
   return (
-    <div className="filter-bar">
-      <span className="filter-label">Filters:</span>
-      <select className="filter-select" value={filters.zone} onChange={e => onChange({ ...filters, zone: e.target.value })}>
-        {zones.map(z => <option key={z}>{z}</option>)}
-      </select>
-      <select className="filter-select" value={filters.product} onChange={e => onChange({ ...filters, product: e.target.value })}>
-        {products.map(p => <option key={p}>{p}</option>)}
-      </select>
-      <select className="filter-select" value={filters.month} onChange={e => onChange({ ...filters, month: e.target.value })}>
-        {months.map(m => <option key={m}>{m}</option>)}
-      </select>
-      <select className="filter-select" value={filters.quarter} onChange={e => onChange({ ...filters, quarter: e.target.value })}>
-        {quarters.map(q => <option key={q}>{q}</option>)}
-      </select>
-      <select className="filter-select" value={filters.status} onChange={e => onChange({ ...filters, status: e.target.value })}>
-        {statuses.map(s => <option key={s}>{s}</option>)}
-      </select>
-      <button className="filter-clear" onClick={() => onChange({ zone: "All", product: "All", month: "All", quarter: "All", status: "All" })}>
-        ✕ Clear
-      </button>
+    <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.8 }}>{label}</div>
+        <div style={{ fontSize: 20, width: 36, height: 36, borderRadius: 8, background: color + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: OZONE_NAVY, lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: "#9CA3AF" }}>{sub}</div>}
+      {trend !== undefined && <div style={{ fontSize: 11, color: trend >= 0 ? "#10B981" : "#EF4444" }}>{trend >= 0 ? "▲" : "▼"} {Math.abs(trend)}% vs last period</div>}
     </div>
   );
 }
 
-// ─── DASHBOARD PAGE ───────────────────────────────────────────────────────────
-function Dashboard({ orders }) {
-  const totalOrders = orders.length;
-  const totalQty = orders.reduce((s, o) => s + o.totalQty, 0);
-  const totalValue = orders.reduce((s, o) => s + o.basicOrderValue, 0);
-  const doneOrders = orders.filter(o => o.status === "Done");
-  const pendingOrders = orders.filter(o => o.status !== "Done");
-  const doneValue = doneOrders.reduce((s, o) => s + o.basicOrderValue, 0);
-  const pendingValue = pendingOrders.reduce((s, o) => s + o.basicOrderValue, 0);
-  const alQty = orders.filter(o => o.product === "Aluminium Doors & Windows").reduce((s, o) => s + o.totalQty, 0);
-  const upvcQty = orders.filter(o => o.product === "UPVC Windows").reduce((s, o) => s + o.totalQty, 0);
-
-  // Monthly trend
-  const monthOrder = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const monthlyData = monthOrder.map(m => {
-    const mo = orders.filter(o => o.month === m);
-    return { month: m, orders: mo.length, value: Math.round(mo.reduce((s, o) => s + o.basicOrderValue, 0) / 100000) };
-  }).filter(m => m.orders > 0);
+// ─── Executive Dashboard ───
+function Dashboard({ data }) {
+  const done = data.filter(d => d.status === "Done");
+  const pending = data.filter(d => d.status !== "Done");
+  const totalVal = data.reduce((s, d) => s + d.basicOrderValue, 0);
+  const doneVal = done.reduce((s, d) => s + d.basicOrderValue, 0);
+  const pendVal = pending.reduce((s, d) => s + d.basicOrderValue, 0);
+  const totalQty = data.reduce((s, d) => s + d.totalQty, 0);
+  const alumQty = data.filter(d => d.product === "Aluminium Doors & Windows").reduce((s, d) => s + d.totalQty, 0);
+  const upvcQty = data.filter(d => d.product === "UPVC Windows").reduce((s, d) => s + d.totalQty, 0);
 
   // Zone breakdown
-  const zoneData = ["North","South","East","West","Central"].map(z => ({
-    zone: z, orders: orders.filter(o => o.zone === z).length,
-    value: Math.round(orders.filter(o => o.zone === z).reduce((s, o) => s + o.basicOrderValue, 0) / 100000),
-  }));
+  const zones = [...new Set(data.map(d => d.zone))];
+  const zoneData = zones.map(z => {
+    const zd = data.filter(d => d.zone === z);
+    return { zone: z, orders: zd.length, value: zd.reduce((s, d) => s + d.basicOrderValue, 0) };
+  }).sort((a, b) => b.value - a.value);
+
+  // Monthly trend
+  const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthData = monthOrder.map(m => {
+    const md = data.filter(d => d.month === m);
+    return { month: m.slice(0, 3), orders: md.length, value: md.reduce((s, d) => s + d.basicOrderValue, 0) };
+  }).filter(m => m.orders > 0);
 
   // Product split
-  const productData = [
-    { name: "Aluminium D&W", value: orders.filter(o => o.product === "Aluminium Doors & Windows").length },
-    { name: "UPVC Windows", value: orders.filter(o => o.product === "UPVC Windows").length },
-  ];
-
-  // Status distribution
-  const statusData = Object.entries(
-    orders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc; }, {})
-  ).map(([name, value]) => ({ name, value }));
-
-  const ZONE_COLORS = [C.navy, C.steel, C.mintDark, C.gold, C.roseDark];
-  const PIE_COLORS = [C.navy, C.gold, C.mintDark, C.roseDark, C.steel];
+  const alumVal = data.filter(d => d.product === "Aluminium Doors & Windows").reduce((s, d) => s + d.basicOrderValue, 0);
+  const upvcVal = data.filter(d => d.product === "UPVC Windows").reduce((s, d) => s + d.basicOrderValue, 0);
 
   return (
-    <>
-      <div className="page-header">
-        <div className="page-title">Executive Dashboard</div>
-        <div className="page-subtitle">Real-time business intelligence · Data as of today</div>
+    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+      <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, color: "#6B7280" }}>Business overview based on connected data source · {data.length} active records</div>
+        </div>
+        <div style={{ fontSize: 12, background: "#ECFDF5", color: "#065F46", padding: "4px 12px", borderRadius: 20, fontWeight: 600 }}>● Live Data</div>
       </div>
 
-      <div className="kpi-grid">
-        <KpiCard label="Total Orders" value={totalOrders} sub="All active orders" icon="📦" accent={C.navy} trend="12 this week" trendDir="up" />
-        <KpiCard label="Total Window Qty" value={totalQty.toLocaleString()} sub="Units across all orders" icon="🪟" accent={C.steel} />
-        <KpiCard label="Total Order Value" value={fmt(totalValue)} sub="Basic order value (ex-GST)" icon="💼" accent={C.gold} trend="8.3% MoM" trendDir="up" />
-        <KpiCard label="Completed Orders" value={doneOrders.length} sub={`${Math.round(doneOrders.length / totalOrders * 100)}% completion rate`} icon="✅" accent={C.mintDark} trend={`${Math.round(doneOrders.length / totalOrders * 100)}%`} trendDir="up" />
-        <KpiCard label="Completed Value" value={fmt(doneValue)} sub="Revenue realised" icon="💰" accent={C.mintDark} />
-        <KpiCard label="Pending Orders" value={pendingOrders.length} sub="Across all stages" icon="⏳" accent={C.gold} />
-        <KpiCard label="Pending Value" value={fmt(pendingValue)} sub="Pipeline value" icon="📊" accent={C.amberDark} />
-        <KpiCard label="Aluminium Qty" value={alQty.toLocaleString()} sub="Aluminium Doors & Windows" icon="🔲" accent={C.navy} />
-        <KpiCard label="UPVC Qty" value={upvcQty.toLocaleString()} sub="UPVC Windows" icon="🔳" accent={C.steel} />
+      {/* KPI Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
+        <KpiCard label="Total Orders" value={data.length} icon="📦" color="#002060" />
+        <KpiCard label="Total Window Qty" value={totalQty.toLocaleString()} icon="🪟" color="#6366F1" />
+        <KpiCard label="Total Order Value" value={fmt(totalVal)} sub={`${data.length} orders`} icon="💰" color="#0EA5E9" />
+        <KpiCard label="Completed Orders" value={done.length} sub={`${pct(done.length, data.length)}% completion`} icon="✅" color="#10B981" trend={4.2} />
+        <KpiCard label="Completed Value" value={fmt(doneVal)} icon="🏆" color="#10B981" />
+        <KpiCard label="Pending Orders" value={pending.length} sub={`${pct(pending.length, data.length)}% pending`} icon="⏳" color="#F59E0B" />
+        <KpiCard label="Pending Value" value={fmt(pendVal)} icon="⚠️" color="#F59E0B" />
+        <KpiCard label="Aluminium Qty" value={alumQty.toLocaleString()} icon="🔩" color="#8B5CF6" />
+        <KpiCard label="UPVC Qty" value={upvcQty.toLocaleString()} icon="🏠" color="#06B6D4" />
       </div>
 
-      <div className="chart-grid">
-        <div className="chart-card" style={{ gridColumn: "span 2" }}>
-          <div className="chart-title">Monthly Order Volume & Revenue Trend <span className="chart-badge">₹ in Lakhs</span></div>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={monthlyData}>
-              <defs>
-                <linearGradient id="valueGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={C.navy} stopOpacity={0.15} />
-                  <stop offset="95%" stopColor={C.navy} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: C.slate }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: C.slate }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: C.slate }} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-              <Bar yAxisId="left" dataKey="orders" name="Orders" fill={C.navy} radius={[4,4,0,0]} opacity={0.85} />
-              <Area yAxisId="right" type="monotone" dataKey="value" name="Value (L)" stroke={C.gold} fill="url(#valueGrad)" strokeWidth={2} dot={{ r: 3, fill: C.gold }} />
-            </AreaChart>
-          </ResponsiveContainer>
+      {/* Charts Row */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+        {/* Monthly Trend */}
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Monthly Order Value (₹ Lakhs)</div>
+          <BarChart data={monthData} xKey="month" yKey="value" color={OZONE_NAVY} height={160} />
         </div>
-
-        <div className="chart-card">
-          <div className="chart-title">Zone-wise Performance</div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={zoneData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11, fill: C.slate }} />
-              <YAxis dataKey="zone" type="category" tick={{ fontSize: 11, fill: C.slate }} width={55} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-              <Bar dataKey="orders" name="Orders" radius={[0,4,4,0]}>
-                {zoneData.map((_, i) => <Cell key={i} fill={ZONE_COLORS[i]} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-card">
-          <div className="chart-title">Product Mix</div>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={productData} cx="50%" cy="50%" outerRadius={72} innerRadius={36} dataKey="value" label={({ name, percent }) => `${name.split(" ")[0]} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
-                {productData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-card">
-          <div className="chart-title">Order Status Distribution</div>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={statusData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={true} fontSize={10}>
-                {statusData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
+        {/* Zone Performance */}
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Zone Performance</div>
+          <HBarChart data={zoneData} xKey="zone" yKey="value" color="#6366F1" height={160} />
         </div>
       </div>
-    </>
+
+      {/* Product Split + Status */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Product Mix</div>
+          <DonutChart data={[{ label: "Aluminium D&W", value: alumVal, color: OZONE_NAVY }, { label: "UPVC Windows", value: upvcVal, color: OZONE_GOLD }]} />
+        </div>
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Order Status Mix</div>
+          <StatusPie data={data} />
+        </div>
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 10 }}>Top Partners</div>
+          {[...new Set(data.map(d => d.partner))].slice(0, 5).map(p => {
+            const pv = data.filter(d => d.partner === p).reduce((s, d) => s + d.basicOrderValue, 0);
+            const maxPv = Math.max(...[...new Set(data.map(d => d.partner))].map(pp => data.filter(d => d.partner === pp).reduce((s, d) => s + d.basicOrderValue, 0)));
+            return (
+              <div key={p} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#374151", marginBottom: 3 }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>{p}</span>
+                  <span style={{ fontWeight: 600, color: OZONE_NAVY }}>{fmt(pv)}</span>
+                </div>
+                <div style={{ height: 6, background: "#F3F4F6", borderRadius: 4 }}>
+                  <div style={{ height: "100%", width: `${pct(pv, maxPv)}%`, background: OZONE_NAVY, borderRadius: 4 }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
-// ─── ORDERS PAGE ──────────────────────────────────────────────────────────────
-function OrdersPage({ orders }) {
-  const [page, setPage] = useState(1);
-  const [sortKey, setSortKey] = useState("sno");
-  const [sortDir, setSortDir] = useState(1);
-  const [selected, setSelected] = useState(null);
-  const PER_PAGE = 15;
-
-  const sorted = [...orders].sort((a, b) => {
-    const av = a[sortKey], bv = b[sortKey];
-    if (typeof av === "number") return (av - bv) * sortDir;
-    return String(av).localeCompare(String(bv)) * sortDir;
-  });
-
-  const totalPages = Math.ceil(sorted.length / PER_PAGE);
-  const pageData = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-  const toggleSort = (key) => {
-    if (sortKey === key) setSortDir(d => -d);
-    else { setSortKey(key); setSortDir(1); }
-  };
-  const sortIcon = (key) => sortKey === key ? (sortDir === 1 ? " ↑" : " ↓") : "";
-
-  const LIFECYCLE = [
-    "Enquiry", "Quotation", "Commercial Approval", "Survey", "Production", "Dispatch", "Installation", "Handover", "Completed"
-  ];
-  const statusToStage = {
-    "Pending": 1, "Survey": 3, "In Production": 4, "Dispatch": 5, "Installation": 6, "Done": 8
-  };
-
+// ─── Simple Bar Chart (SVG) ───
+function BarChart({ data, xKey, yKey, color, height = 160 }) {
+  if (!data.length) return null;
+  const maxVal = Math.max(...data.map(d => d[yKey]));
+  const barW = Math.floor(460 / data.length) - 4;
   return (
-    <>
-      <div className="page-header">
-        <div className="page-title">Order Management</div>
-        <div className="page-subtitle">{orders.length} orders · Click any row for lifecycle details</div>
-      </div>
-      <div className="table-card">
-        <div className="table-header">
-          <div className="table-title">All Orders <span className="tag">{orders.length}</span></div>
-          <div className="table-actions">
-            <button className="btn-sm btn-outline">⬇ Export CSV</button>
-            <button className="btn-sm btn-primary">+ New Order</button>
+    <svg viewBox={`0 0 480 ${height + 30}`} style={{ width: "100%", height: height + 30 }}>
+      {data.map((d, i) => {
+        const barH = maxVal > 0 ? Math.round((d[yKey] / maxVal) * (height - 20)) : 0;
+        const x = i * (barW + 4) + 4;
+        return (
+          <g key={i}>
+            <rect x={x} y={height - barH} width={barW} height={barH} rx={3} fill={color} opacity={0.85} />
+            <text x={x + barW / 2} y={height + 16} textAnchor="middle" fontSize={9} fill="#6B7280">{d[xKey]}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function HBarChart({ data, xKey, yKey, color, height = 160 }) {
+  if (!data.length) return null;
+  const maxVal = Math.max(...data.map(d => d[yKey]));
+  const rowH = Math.floor(height / data.length) - 4;
+  return (
+    <svg viewBox="0 0 480 180" style={{ width: "100%", height }}>
+      {data.map((d, i) => {
+        const barW = maxVal > 0 ? Math.round((d[yKey] / maxVal) * 300) : 0;
+        const y = i * (rowH + 6) + 4;
+        return (
+          <g key={i}>
+            <text x={0} y={y + rowH / 2 + 4} fontSize={10} fill="#374151">{d[xKey]}</text>
+            <rect x={80} y={y} width={barW} height={rowH} rx={3} fill={color} opacity={0.85} />
+            <text x={86 + barW} y={y + rowH / 2 + 4} fontSize={10} fill="#6B7280">{fmt(d[yKey])}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function DonutChart({ data }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  let startAngle = -Math.PI / 2;
+  const segments = data.map(d => {
+    const angle = (d.value / total) * 2 * Math.PI;
+    const seg = { ...d, startAngle, angle };
+    startAngle += angle;
+    return seg;
+  });
+  const arcPath = (sa, ea, r, ri) => {
+    const x1 = 60 + r * Math.cos(sa), y1 = 60 + r * Math.sin(sa);
+    const x2 = 60 + r * Math.cos(ea), y2 = 60 + r * Math.sin(ea);
+    const ix1 = 60 + ri * Math.cos(ea), iy1 = 60 + ri * Math.sin(ea);
+    const ix2 = 60 + ri * Math.cos(sa), iy2 = 60 + ri * Math.sin(sa);
+    const lg = ea - sa > Math.PI ? 1 : 0;
+    return `M${x1},${y1} A${r},${r} 0 ${lg} 1 ${x2},${y2} L${ix1},${iy1} A${ri},${ri} 0 ${lg} 0 ${ix2},${iy2} Z`;
+  };
+  return (
+    <div>
+      <svg viewBox="0 0 120 120" style={{ width: 100, display: "block", margin: "0 auto" }}>
+        {segments.map((s, i) => <path key={i} d={arcPath(s.startAngle, s.startAngle + s.angle, 52, 35)} fill={s.color} />)}
+        <text x={60} y={63} textAnchor="middle" fontSize={10} fill={OZONE_NAVY} fontWeight="600">{pct(segments[0]?.value || 0, total)}%</text>
+      </svg>
+      {data.map((d, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11, color: "#374151" }}>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: d.color }} />
+          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label}</span>
+          <span style={{ fontWeight: 600, color: OZONE_NAVY }}>{fmt(d.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatusPie({ data }) {
+  const statusColors = { Done: "#10B981", Survey: "#3B82F6", Production: "#8B5CF6", Dispatch: "#F59E0B", Installation: "#06B6D4", Pending: "#EF4444", "Quotation Sent": "#6B7280" };
+  const counts = {};
+  data.forEach(d => { counts[d.status] = (counts[d.status] || 0) + 1; });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const total = entries.reduce((s, [, v]) => s + v, 0);
+  return (
+    <div>
+      {entries.map(([status, count]) => (
+        <div key={status} style={{ marginBottom: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#374151", marginBottom: 3 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: statusColors[status] || "#9CA3AF", display: "inline-block" }} />
+              {status}
+            </span>
+            <span style={{ fontWeight: 600 }}>{count} ({pct(count, total)}%)</span>
+          </div>
+          <div style={{ height: 5, background: "#F3F4F6", borderRadius: 4 }}>
+            <div style={{ height: "100%", width: `${pct(count, total)}%`, background: statusColors[status] || "#9CA3AF", borderRadius: 4 }} />
           </div>
         </div>
-        <div className="table-wrap">
-          <table>
+      ))}
+    </div>
+  );
+}
+
+// ─── Order Management ───
+function OrderManagement({ data, search }) {
+  const [sort, setSort] = useState({ key: "sno", dir: 1 });
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 15;
+
+  const filtered = useMemo(() => {
+    let d = data;
+    if (search) {
+      const q = search.toLowerCase();
+      d = d.filter(r => r.quotationNumber?.toLowerCase().includes(q) || r.customer?.toLowerCase().includes(q) || r.partner?.toLowerCase().includes(q) || r.salesPerson?.toLowerCase().includes(q) || r.zone?.toLowerCase().includes(q) || r.product?.toLowerCase().includes(q));
+    }
+    return d.sort((a, b) => (a[sort.key] > b[sort.key] ? 1 : -1) * sort.dir);
+  }, [data, search, sort]);
+
+  const pages = Math.ceil(filtered.length / PER_PAGE);
+  const rows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const statusColors = { Done: { bg: "#ECFDF5", text: "#065F46" }, Survey: { bg: "#EFF6FF", text: "#1D4ED8" }, Production: { bg: "#F5F3FF", text: "#5B21B6" }, Dispatch: { bg: "#FFFBEB", text: "#92400E" }, Installation: { bg: "#E0F2FE", text: "#0C4A6E" }, Pending: { bg: "#FEF2F2", text: "#991B1B" } };
+
+  const thStyle = (k) => ({ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, textAlign: "left", cursor: "pointer", whiteSpace: "nowrap", background: "#F8FAFF", borderBottom: "1px solid #E5E7EB" });
+
+  return (
+    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: "#6B7280" }}>Showing {filtered.length} orders</div>
+        <button style={{ padding: "7px 16px", background: OZONE_NAVY, color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>⬇ Export</button>
+      </div>
+      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr>
-                {[["sno","S.No"],["dateOfOrder","Date"],["quotationNumber","Quote No"],["customer","Customer"],["partner","Partner"],["product","Product"],["zone","Zone"],["salesPerson","Sales Person"],["totalQty","Qty"],["basicOrderValue","Value"],["status","Status"]].map(([k,l]) => (
-                  <th key={k} onClick={() => toggleSort(k)}>{l}{sortIcon(k)}</th>
+                {[["sno", "S.No"], ["dateOfOrder", "Date"], ["quotationNumber", "Quotation #"], ["customer", "Customer"], ["partner", "Partner"], ["product", "Product"], ["zone", "Zone"], ["salesPerson", "Sales Person"], ["totalQty", "Qty"], ["basicOrderValue", "Order Value"], ["status", "Status"]].map(([k, l]) => (
+                  <th key={k} style={thStyle(k)} onClick={() => setSort(s => ({ key: k, dir: s.key === k ? -s.dir : 1 }))}>
+                    {l} {sort.key === k ? (sort.dir === 1 ? "↑" : "↓") : ""}
+                  </th>
                 ))}
-                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {pageData.map(o => (
-                <tr key={o.sno} style={{ cursor: "pointer" }} onClick={() => setSelected(o)}>
-                  <td><strong style={{ color: C.navy }}>#{o.sno}</strong></td>
-                  <td>{o.dateOfOrder?.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                  <td><span style={{ fontFamily: "monospace", fontSize: 11, color: C.navy }}>{o.quotationNumber}</span></td>
-                  <td>{o.customer}</td>
-                  <td>{o.partner}</td>
-                  <td><span className={`tag ${o.product.includes("Aluminium") ? "product-al" : "product-up"}`}>{o.product.includes("Aluminium") ? "AL" : "UPVC"}</span></td>
-                  <td>{o.zone}</td>
-                  <td>{o.salesPerson}</td>
-                  <td style={{ textAlign: "right", fontWeight: 600 }}>{o.totalQty.toLocaleString()}</td>
-                  <td style={{ textAlign: "right", fontWeight: 700, color: C.navyDark }}>{fmt(o.basicOrderValue)}</td>
-                  <td>{getBadge(o.status)}</td>
-                  <td><button className="btn-sm btn-outline" onClick={e => { e.stopPropagation(); setSelected(o); }}>View</button></td>
+              {rows.map((r, i) => {
+                const sc = statusColors[r.status] || { bg: "#F3F4F6", text: "#374151" };
+                return (
+                  <tr key={r.sno} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAFA", borderBottom: "1px solid #F3F4F6" }}>
+                    <td style={{ padding: "9px 12px", color: "#9CA3AF" }}>{r.sno}</td>
+                    <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{r.dateOfOrder instanceof Date ? r.dateOfOrder.toLocaleDateString("en-IN") : r.dateOfOrder}</td>
+                    <td style={{ padding: "9px 12px", color: OZONE_NAVY, fontWeight: 600 }}>{r.quotationNumber}</td>
+                    <td style={{ padding: "9px 12px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.customer}</td>
+                    <td style={{ padding: "9px 12px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.partner}</td>
+                    <td style={{ padding: "9px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.product}</td>
+                    <td style={{ padding: "9px 12px" }}>{r.zone}</td>
+                    <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{r.salesPerson}</td>
+                    <td style={{ padding: "9px 12px", textAlign: "right" }}>{r.totalQty}</td>
+                    <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: OZONE_NAVY }}>{fmt(r.basicOrderValue)}</td>
+                    <td style={{ padding: "9px 12px" }}>
+                      <span style={{ background: sc.bg, color: sc.text, padding: "3px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>{r.status}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #F3F4F6", background: "#FAFAFA" }}>
+          <div style={{ fontSize: 12, color: "#6B7280" }}>Page {page} of {pages} · {filtered.length} records</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {[1, 2, 3].map(p => (
+              <button key={p} onClick={() => setPage(p)} style={{ padding: "5px 10px", border: "1px solid #E5E7EB", borderRadius: 6, background: page === p ? OZONE_NAVY : "#fff", color: page === p ? "#fff" : "#374151", fontSize: 12, cursor: "pointer" }}>{p}</button>
+            ))}
+            {pages > 3 && <span style={{ fontSize: 12, color: "#9CA3AF", padding: "5px 4px" }}>…{pages}</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sales Funnel ───
+function SalesFunnel({ data }) {
+  const stages = [
+    { label: "Enquiry / Quotation", statuses: ["Quotation Sent", "Pending"], icon: "📞" },
+    { label: "Commercial Approval", statuses: ["Mark as Won"], icon: "✔" },
+    { label: "Site Survey", statuses: ["Survey"], icon: "🔍" },
+    { label: "Production", statuses: ["Production"], icon: "🏭" },
+    { label: "Dispatch", statuses: ["Dispatch"], icon: "🚛" },
+    { label: "Installation", statuses: ["Installation"], icon: "🔧" },
+    { label: "Completed", statuses: ["Done"], icon: "🏆" },
+  ];
+  const total = data.length;
+  return (
+    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+      <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>End-to-end order lifecycle — from enquiry to completion</div>
+      <div style={{ maxWidth: 700, margin: "0 auto" }}>
+        {stages.map((stage, i) => {
+          const count = stage.statuses.includes("Done")
+            ? data.filter(d => d.status === "Done").length
+            : data.filter(d => stage.statuses.some(s => d.status === s || d.status?.toLowerCase().includes(s.toLowerCase()))).length;
+          const val = data.filter(d => stage.statuses.some(s => d.status === s || d.status?.toLowerCase().includes(s.toLowerCase()))).reduce((s, d) => s + d.basicOrderValue, 0);
+          const convPct = pct(count, total);
+          const width = Math.max(40, 100 - i * 8);
+          const colors = ["#002060", "#1D4ED8", "#6D28D9", "#0369A1", "#0F766E", "#15803D", "#10B981"];
+          return (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 4 }}>
+              <div style={{ width: `${width}%`, background: colors[i], borderRadius: 8, padding: "12px 20px", color: "#fff", display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 20 }}>{stage.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{stage.label}</div>
+                  <div style={{ fontSize: 11, opacity: 0.8 }}>{val > 0 ? fmt(val) : "—"}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>{count}</div>
+                  <div style={{ fontSize: 11, opacity: 0.8 }}>{convPct}%</div>
+                </div>
+              </div>
+              {i < stages.length - 1 && (
+                <div style={{ width: 2, height: 12, background: "#E5E7EB" }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Analytics ───
+function Analytics({ data }) {
+  const zones = [...new Set(data.map(d => d.zone))];
+  const salesPersons = [...new Set(data.map(d => d.salesPerson))];
+
+  const zoneAnalytics = zones.map(z => {
+    const zd = data.filter(d => d.zone === z);
+    const done = zd.filter(d => d.status === "Done");
+    return { zone: z, orders: zd.length, done: done.length, value: zd.reduce((s, d) => s + d.basicOrderValue, 0), qty: zd.reduce((s, d) => s + d.totalQty, 0) };
+  });
+
+  const spAnalytics = salesPersons.map(sp => {
+    const spd = data.filter(d => d.salesPerson === sp);
+    const done = spd.filter(d => d.status === "Done");
+    return { sp, orders: spd.length, done: done.length, value: spd.reduce((s, d) => s + d.basicOrderValue, 0) };
+  }).sort((a, b) => b.value - a.value);
+
+  return (
+    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+        {/* Zone Analytics */}
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Zone-wise Performance</div>
+          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFF" }}>
+                {["Zone", "Orders", "Done", "Conv%", "Value"].map(h => <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {zoneAnalytics.map((z, i) => (
+                <tr key={z.zone} style={{ borderBottom: "1px solid #F3F4F6", background: i % 2 ? "#FAFAFA" : "#fff" }}>
+                  <td style={{ padding: "8px 10px", fontWeight: 600, color: OZONE_NAVY }}>{z.zone}</td>
+                  <td style={{ padding: "8px 10px" }}>{z.orders}</td>
+                  <td style={{ padding: "8px 10px", color: "#10B981", fontWeight: 600 }}>{z.done}</td>
+                  <td style={{ padding: "8px 10px" }}>{pct(z.done, z.orders)}%</td>
+                  <td style={{ padding: "8px 10px", fontWeight: 600 }}>{fmt(z.value)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <div className="table-footer">
-          <span>Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, sorted.length)} of {sorted.length}</span>
-          <div className="pagination">
-            <button className="pg-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹</button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const p = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
-              return <button key={p} className={`pg-btn ${page === p ? "active" : ""}`} onClick={() => setPage(p)}>{p}</button>;
-            })}
-            <button className="pg-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>›</button>
-          </div>
-        </div>
-      </div>
-
-      {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <div style={{ fontSize: 17, fontWeight: 700 }}>Order #{selected.sno} · {selected.quotationNumber}</div>
-                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 3 }}>{selected.customer} · {selected.partner}</div>
-              </div>
-              <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="info-grid" style={{ marginBottom: 22 }}>
-                {[
-                  ["Product", selected.product],
-                  ["Zone", selected.zone],
-                  ["Zonal Manager", selected.zm],
-                  ["Sales Person", selected.salesPerson],
-                  ["Total Qty", selected.totalQty.toLocaleString() + " units"],
-                  ["Basic Order Value", fmt(selected.basicOrderValue)],
-                  ["Total Order Value", fmt(selected.totalOrderValue)],
-                  ["Status", selected.status],
-                  ["Order Date", selected.dateOfOrder?.toLocaleDateString("en-IN")],
-                  ["Month", `${selected.month} ${selected.year}`],
-                  ["SO Number", selected.soNumber || "—"],
-                  ["State", selected.state],
-                ].map(([k, v]) => (
-                  <div className="info-row" key={k}>
-                    <div className="info-key">{k}</div>
-                    <div className="info-val">{k === "Status" ? getBadge(v) : v}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ fontWeight: 700, fontSize: 13, color: C.navyDark, marginBottom: 14 }}>Order Lifecycle Timeline</div>
-              <div className="timeline">
-                {LIFECYCLE.map((stage, i) => {
-                  const currentStage = statusToStage[selected.status] || 0;
-                  const isDone = i < currentStage;
-                  const isActive = i === currentStage;
-                  return (
-                    <div className="timeline-item" key={stage}>
-                      <div className={`timeline-dot ${isDone ? "done" : isActive ? "active" : "pending"}`}>
-                        {isDone ? "✓" : isActive ? "●" : ""}
-                      </div>
-                      <div>
-                        <div className="timeline-label" style={{ color: isDone ? C.mintDark : isActive ? C.navy : C.slate }}>{stage}</div>
-                        <div className="timeline-date">{isDone ? "Completed" : isActive ? "In Progress" : "Pending"}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="section-divider" />
-              <div style={{ fontWeight: 700, fontSize: 13, color: C.navyDark, marginBottom: 14 }}>Payment Schedule</div>
-              {[
-                { label: "Advance (30%)", amount: selected.advancePayment, status: "Received", color: C.mintDark },
-                { label: "Survey Stage (20%)", amount: selected.surveyPayment, status: selected.status === "Done" || selected.status === "In Production" ? "Received" : "Pending", color: C.navy },
-                { label: "Dispatch Stage (30%)", amount: selected.dispatchPayment, status: selected.status === "Done" ? "Received" : "Pending", color: C.amberDark },
-                { label: "Final (20%)", amount: Math.round(selected.basicOrderValue * 0.2), status: selected.status === "Done" ? "Received" : "Pending", color: C.gold },
-              ].map(p => (
-                <div className="payment-stage" key={p.label}>
-                  <div className="payment-stage-icon" style={{ background: p.color + "20" }}>💳</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{p.label}</div>
-                    <div style={{ fontSize: 12, color: C.slate }}>{fmt(p.amount)}</div>
-                  </div>
-                  <span className={`badge ${p.status === "Received" ? "badge-done" : "badge-pending"}`}>{p.status}</span>
+        {/* Sales Person Analytics */}
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Sales Person Leaderboard</div>
+          {spAnalytics.slice(0, 8).map((sp, i) => {
+            const maxVal = spAnalytics[0].value;
+            return (
+              <div key={sp.sp} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: i < 3 ? OZONE_GOLD : "#E5E7EB", color: i < 3 ? "#fff" : "#6B7280", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700 }}>{i + 1}</span>
+                    {sp.sp}
+                  </span>
+                  <span style={{ fontWeight: 600, color: OZONE_NAVY }}>{fmt(sp.value)}</span>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div style={{ height: 5, background: "#F3F4F6", borderRadius: 4 }}>
+                  <div style={{ height: "100%", width: `${pct(sp.value, maxVal)}%`, background: i < 3 ? OZONE_GOLD : OZONE_NAVY, borderRadius: 4, opacity: 0.8 }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
-      )}
-    </>
+      </div>
+      {/* Product Deep-Dive */}
+      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Product Category Analysis</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {["Aluminium Doors & Windows", "UPVC Windows"].map(prod => {
+            const pd = data.filter(d => d.product === prod);
+            const done = pd.filter(d => d.status === "Done");
+            const val = pd.reduce((s, d) => s + d.basicOrderValue, 0);
+            const qty = pd.reduce((s, d) => s + d.totalQty, 0);
+            return (
+              <div key={prod} style={{ border: "1px solid #E5E7EB", borderRadius: 8, padding: "14px" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: OZONE_NAVY, marginBottom: 10 }}>{prod}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {[["Orders", pd.length], ["Completed", done.length], ["Total Qty", qty], ["Order Value", fmt(val)]].map(([l, v]) => (
+                    <div key={l} style={{ background: "#F8FAFF", borderRadius: 6, padding: "8px 10px" }}>
+                      <div style={{ fontSize: 10, color: "#9CA3AF" }}>{l}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: OZONE_NAVY }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
-// ─── ANALYTICS PAGE ───────────────────────────────────────────────────────────
-function AnalyticsPage({ orders }) {
-  const zones = ["North","South","East","West","Central"];
-  const COLORS = [C.navy, C.steel, C.mintDark, C.gold, C.roseDark];
-
-  const zoneMonthly = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map(m => {
-    const row = { month: m };
-    zones.forEach(z => {
-      row[z] = orders.filter(o => o.zone === z && o.month === m).reduce((s, o) => s + o.basicOrderValue, 0);
-      row[z] = Math.round(row[z] / 100000);
-    });
-    return row;
-  }).filter(r => zones.some(z => r[z] > 0));
-
-  const salesData = Object.entries(
-    orders.reduce((acc, o) => {
-      if (!acc[o.salesPerson]) acc[o.salesPerson] = { name: o.salesPerson, orders: 0, value: 0, qty: 0 };
-      acc[o.salesPerson].orders++;
-      acc[o.salesPerson].value += o.basicOrderValue;
-      acc[o.salesPerson].qty += o.totalQty;
-      return acc;
-    }, {})
-  ).map(([, v]) => ({ ...v, value: Math.round(v.value / 100000) }))
-    .sort((a, b) => b.value - a.value).slice(0, 8);
-
-  const productZone = zones.map(z => ({
-    zone: z,
-    aluminium: orders.filter(o => o.zone === z && o.product === "Aluminium Doors & Windows").reduce((s, o) => s + o.basicOrderValue, 0),
-    upvc: orders.filter(o => o.zone === z && o.product === "UPVC Windows").reduce((s, o) => s + o.basicOrderValue, 0),
-  })).map(r => ({ ...r, aluminium: Math.round(r.aluminium / 100000), upvc: Math.round(r.upvc / 100000) }));
-
-  const qtrData = ["Q1","Q2","Q3","Q4"].map(q => ({
-    quarter: q,
-    orders: orders.filter(o => o.quarter === q).length,
-    value: Math.round(orders.filter(o => o.quarter === q).reduce((s, o) => s + o.basicOrderValue, 0) / 100000),
-    done: orders.filter(o => o.quarter === q && o.status === "Done").length,
-  }));
+// ─── Partners ───
+function Partners({ data }) {
+  const partners = [...new Set(data.map(d => d.partner))];
+  const partnerData = partners.map(p => {
+    const pd = data.filter(d => d.partner === p);
+    const done = pd.filter(d => d.status === "Done");
+    const val = pd.reduce((s, d) => s + d.basicOrderValue, 0);
+    const qty = pd.reduce((s, d) => s + d.totalQty, 0);
+    const zones = [...new Set(pd.map(d => d.zone))];
+    return { partner: p, orders: pd.length, done: done.length, pending: pd.length - done.length, value: val, qty, convRate: pct(done.length, pd.length), zones: zones.join(", ") };
+  }).sort((a, b) => b.value - a.value);
 
   return (
-    <>
-      <div className="page-header">
-        <div className="page-title">Advanced Analytics</div>
-        <div className="page-subtitle">Multi-dimensional business performance analysis</div>
+    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 20 }}>
+        <KpiCard label="Total Partners" value={partners.length} icon="🤝" color={OZONE_NAVY} />
+        <KpiCard label="Total Partner Orders" value={data.length} icon="📦" color="#6366F1" />
+        <KpiCard label="Avg Order Value" value={fmt(data.reduce((s, d) => s + d.basicOrderValue, 0) / Math.max(data.length, 1))} icon="📈" color="#0EA5E9" />
+        <KpiCard label="Top Conversion" value={`${Math.max(...partnerData.map(p => p.convRate))}%`} icon="🏆" color="#10B981" />
       </div>
-
-      <div className="chart-grid">
-        <div className="chart-card" style={{ gridColumn: "span 2" }}>
-          <div className="chart-title">Zone-wise Monthly Revenue Trend <span className="chart-badge">₹ Lakhs</span></div>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={zoneMonthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: C.slate }} />
-              <YAxis tick={{ fontSize: 11, fill: C.slate }} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              {zones.map((z, i) => (
-                <Line key={z} type="monotone" dataKey={z} stroke={COLORS[i]} strokeWidth={2} dot={{ r: 3 }} />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #F3F4F6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY }}>Partner Performance Matrix</div>
+          <button style={{ padding: "6px 14px", background: OZONE_NAVY, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>⬇ Export</button>
         </div>
-
-        <div className="chart-card">
-          <div className="chart-title">Top Sales Personnel <span className="chart-badge">₹ Lakhs</span></div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={salesData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: C.slate }} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: C.slate }} width={70} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-              <Bar dataKey="value" name="Value (₹L)" fill={C.navy} radius={[0,4,4,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-card">
-          <div className="chart-title">Product Revenue by Zone <span className="chart-badge">₹ Lakhs</span></div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={productZone}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
-              <XAxis dataKey="zone" tick={{ fontSize: 11, fill: C.slate }} />
-              <YAxis tick={{ fontSize: 11, fill: C.slate }} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="aluminium" name="Aluminium D&W" fill={C.navy} radius={[4,4,0,0]} stackId="a" />
-              <Bar dataKey="upvc" name="UPVC Windows" fill={C.gold} radius={[4,4,0,0]} stackId="a" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-card">
-          <div className="chart-title">Quarterly Performance</div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={qtrData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
-              <XAxis dataKey="quarter" tick={{ fontSize: 12, fill: C.slate }} />
-              <YAxis tick={{ fontSize: 11, fill: C.slate }} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="orders" name="Total Orders" fill={C.steel} radius={[4,4,0,0]} />
-              <Bar dataKey="done" name="Completed" fill={C.mintDark} radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── PARTNERS PAGE ────────────────────────────────────────────────────────────
-function PartnersPage({ orders }) {
-  const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState("value");
-  const [sortDir, setSortDir] = useState(-1);
-
-  const partnerData = Object.entries(
-    orders.reduce((acc, o) => {
-      if (!acc[o.partner]) acc[o.partner] = { name: o.partner, orders: 0, value: 0, qty: 0, done: 0, zones: new Set() };
-      acc[o.partner].orders++;
-      acc[o.partner].value += o.basicOrderValue;
-      acc[o.partner].qty += o.totalQty;
-      if (o.status === "Done") acc[o.partner].done++;
-      acc[o.partner].zones.add(o.zone);
-      return acc;
-    }, {})
-  ).map(([, v]) => ({ ...v, zones: [...v.zones].join(", "), convRate: Math.round(v.done / v.orders * 100) }))
-    .sort((a, b) => {
-      const av = a[sortKey], bv = b[sortKey];
-      return (typeof av === "number" ? av - bv : String(av).localeCompare(String(bv))) * sortDir;
-    })
-    .filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-
-  const toggleSort = (key) => {
-    if (sortKey === key) setSortDir(d => -d);
-    else { setSortKey(key); setSortDir(-1); }
-  };
-
-  const top3Value = partnerData.slice(0, 3).map((_, i) => i);
-
-  return (
-    <>
-      <div className="page-header">
-        <div className="page-title">Partner Performance</div>
-        <div className="page-subtitle">{partnerData.length} active channel partners</div>
-      </div>
-
-      <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-        <KpiCard label="Total Partners" value={partnerData.length} icon="🤝" accent={C.navy} />
-        <KpiCard label="Top Partner Value" value={fmt(partnerData[0]?.value)} icon="🏆" accent={C.gold} />
-        <KpiCard label="Avg Orders/Partner" value={Math.round(orders.length / partnerData.length)} icon="📊" accent={C.steel} />
-        <KpiCard label="Avg Conversion" value={`${Math.round(partnerData.reduce((s, p) => s + p.convRate, 0) / partnerData.length)}%`} icon="✅" accent={C.mintDark} />
-      </div>
-
-      <div className="table-card">
-        <div className="table-header">
-          <div className="table-title">Partner Leaderboard</div>
-          <input className="auth-input" style={{ width: 240, padding: "7px 12px" }}
-            placeholder="🔍 Search partners..." value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-        <div className="table-wrap">
-          <table>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr>
-                <th>Rank</th>
-                {[["name","Partner Name"],["orders","Orders"],["value","Total Value"],["qty","Qty"],["convRate","Conv. Rate"],["zones","Zones"]].map(([k, l]) => (
-                  <th key={k} onClick={() => toggleSort(k)} style={{ cursor: "pointer" }}>{l}{sortKey === k ? (sortDir === -1 ? " ↓" : " ↑") : ""}</th>
-                ))}
+              <tr style={{ background: "#F8FAFF" }}>
+                {["#", "Partner Name", "Zones", "Orders", "Done", "Pending", "Conv%", "Total Qty", "Order Value"].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", borderBottom: "1px solid #E5E7EB", whiteSpace: "nowrap" }}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
               {partnerData.map((p, i) => (
-                <tr key={p.name}>
-                  <td>
-                    <span className={`partner-rank ${i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : ""}`}>
-                      {i < 3 ? ["🥇","🥈","🥉"][i] : i + 1}
-                    </span>
+                <tr key={p.partner} style={{ borderBottom: "1px solid #F3F4F6", background: i % 2 ? "#FAFAFA" : "#fff" }}>
+                  <td style={{ padding: "10px 12px", color: "#9CA3AF", fontWeight: 600 }}>{i + 1}</td>
+                  <td style={{ padding: "10px 12px", fontWeight: 600, color: OZONE_NAVY, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.partner}</td>
+                  <td style={{ padding: "10px 12px", color: "#6B7280", fontSize: 11 }}>{p.zones}</td>
+                  <td style={{ padding: "10px 12px" }}>{p.orders}</td>
+                  <td style={{ padding: "10px 12px", color: "#10B981", fontWeight: 600 }}>{p.done}</td>
+                  <td style={{ padding: "10px 12px", color: "#F59E0B", fontWeight: 600 }}>{p.pending}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <span style={{ background: p.convRate >= 50 ? "#ECFDF5" : "#FEF2F2", color: p.convRate >= 50 ? "#065F46" : "#991B1B", padding: "2px 8px", borderRadius: 12, fontWeight: 600, fontSize: 11 }}>{p.convRate}%</span>
                   </td>
-                  <td><strong>{p.name}</strong></td>
-                  <td style={{ textAlign: "center" }}>{p.orders}</td>
-                  <td style={{ textAlign: "right", fontWeight: 700, color: C.navyDark }}>{fmt(p.value)}</td>
-                  <td style={{ textAlign: "right" }}>{p.qty.toLocaleString()}</td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div className="progress-bar" style={{ width: 80 }}>
-                        <div className="progress-fill" style={{ width: `${p.convRate}%`, background: p.convRate >= 70 ? C.mintDark : p.convRate >= 40 ? C.gold : C.roseDark }} />
-                      </div>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>{p.convRate}%</span>
-                    </div>
-                  </td>
-                  <td>{p.zones.split(", ").map(z => <span key={z} className="tag" style={{ marginRight: 2 }}>{z}</span>)}</td>
+                  <td style={{ padding: "10px 12px" }}>{p.qty}</td>
+                  <td style={{ padding: "10px 12px", fontWeight: 700, color: OZONE_NAVY }}>{fmt(p.value)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
-// ─── PAYMENTS PAGE ────────────────────────────────────────────────────────────
-function PaymentsPage({ orders }) {
-  const totalBasic = orders.reduce((s, o) => s + o.basicOrderValue, 0);
-  const advTotal = orders.reduce((s, o) => s + o.advancePayment, 0);
-  const surveyTotal = orders.reduce((s, o) => s + o.surveyPayment, 0);
-  const dispatchTotal = orders.reduce((s, o) => s + o.dispatchPayment, 0);
-  const doneOrders = orders.filter(o => o.status === "Done");
-  const collected = doneOrders.reduce((s, o) => s + o.basicOrderValue, 0);
-  const outstanding = totalBasic - collected;
-
-  const paymentStages = [
-    { label: "Advance Payments", amount: advTotal, received: advTotal, pct: 30, icon: "💵", color: C.navy },
-    { label: "Survey Stage Payments", amount: surveyTotal, received: Math.round(surveyTotal * 0.65), pct: 20, icon: "📐", color: C.steel },
-    { label: "Dispatch Payments", amount: dispatchTotal, received: Math.round(dispatchTotal * 0.4), pct: 30, icon: "🚚", color: C.gold },
-    { label: "Final Settlement", amount: Math.round(totalBasic * 0.2), received: Math.round(totalBasic * 0.2 * 0.3), pct: 20, icon: "🏁", color: C.mintDark },
-  ];
-
-  const zonePaymentData = ["North","South","East","West","Central"].map(z => {
-    const zo = orders.filter(o => o.zone === z);
-    const tot = zo.reduce((s, o) => s + o.basicOrderValue, 0);
-    const coll = zo.filter(o => o.status === "Done").reduce((s, o) => s + o.basicOrderValue, 0);
-    return { zone: z, total: Math.round(tot / 100000), collected: Math.round(coll / 100000), outstanding: Math.round((tot - coll) / 100000) };
-  });
+// ─── Payment Tracker ───
+function PaymentTracker({ data }) {
+  const totalVal = data.reduce((s, d) => s + d.basicOrderValue, 0);
+  const advanceVal = data.reduce((s, d) => s + d.basicOrderValue * (d.advancePercent / 100), 0);
+  const surveyVal = data.reduce((s, d) => s + d.basicOrderValue * (d.surveyPercent / 100), 0);
+  const despatchVal = data.reduce((s, d) => s + d.basicOrderValue * (d.despatchPercent / 100), 0);
+  const collected = data.filter(d => d.status === "Done").reduce((s, d) => s + d.basicOrderValue, 0);
+  const outstanding = totalVal - collected;
 
   return (
-    <>
-      <div className="page-header">
-        <div className="page-title">Payment Tracking</div>
-        <div className="page-subtitle">Collection status, outstanding balances, and financial health</div>
+    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
+        <KpiCard label="Total Billed" value={fmt(totalVal)} icon="🧾" color={OZONE_NAVY} />
+        <KpiCard label="Advance (30%)" value={fmt(advanceVal)} icon="💵" color="#0EA5E9" />
+        <KpiCard label="Survey Stage (20%)" value={fmt(surveyVal)} icon="🔍" color="#6366F1" />
+        <KpiCard label="Despatch (50%)" value={fmt(despatchVal)} icon="🚛" color="#F59E0B" />
+        <KpiCard label="Collected" value={fmt(collected)} icon="✅" color="#10B981" />
+        <KpiCard label="Outstanding" value={fmt(outstanding)} icon="⚠️" color="#EF4444" />
       </div>
 
-      <div className="kpi-grid">
-        <KpiCard label="Total Order Value" value={fmt(totalBasic)} icon="💼" accent={C.navy} />
-        <KpiCard label="Amount Collected" value={fmt(collected)} icon="✅" accent={C.mintDark} trend={`${Math.round(collected / totalBasic * 100)}%`} trendDir="up" />
-        <KpiCard label="Outstanding Balance" value={fmt(outstanding)} icon="⏳" accent={C.roseDark} />
-        <KpiCard label="Collection Rate" value={`${Math.round(collected / totalBasic * 100)}%`} icon="📊" accent={C.gold} />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 22 }}>
-        <div className="chart-card">
-          <div className="chart-title">Payment Stage Summary</div>
-          {paymentStages.map(p => (
-            <div className="payment-stage" key={p.label}>
-              <div className="payment-stage-icon" style={{ background: p.color + "20" }}>{p.icon}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, marginBottom: 5 }}>
-                  <span>{p.label}</span>
-                  <span style={{ color: C.navyDark }}>{fmt(p.received)} / {fmt(p.amount)}</span>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${Math.round(p.received / p.amount * 100)}%`, background: p.color }} />
-                </div>
-                <div style={{ fontSize: 11, color: C.slate, marginTop: 3 }}>{Math.round(p.received / p.amount * 100)}% collected of {p.pct}% stage</div>
-              </div>
+      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Collection Progress</div>
+        {[{ label: "Advance Collected", val: advanceVal, max: advanceVal, color: "#0EA5E9" },
+          { label: "Survey Stage", val: surveyVal * 0.6, max: surveyVal, color: "#6366F1" },
+          { label: "Despatch Stage", val: despatchVal * 0.35, max: despatchVal, color: "#F59E0B" },
+          { label: "Total Collection", val: collected, max: totalVal, color: "#10B981" }
+        ].map(item => (
+          <div key={item.label} style={{ marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 5 }}>
+              <span style={{ fontWeight: 600, color: "#374151" }}>{item.label}</span>
+              <span style={{ color: item.color, fontWeight: 700 }}>{fmt(item.val)} / {fmt(item.max)} ({pct(item.val, item.max)}%)</span>
             </div>
-          ))}
-        </div>
+            <div style={{ height: 8, background: "#F3F4F6", borderRadius: 4 }}>
+              <div style={{ height: "100%", width: `${pct(item.val, item.max)}%`, background: item.color, borderRadius: 4 }} />
+            </div>
+          </div>
+        ))}
+      </div>
 
-        <div className="chart-card">
-          <div className="chart-title">Zone-wise Collection Status <span className="chart-badge">₹ Lakhs</span></div>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={zonePaymentData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
-              <XAxis dataKey="zone" tick={{ fontSize: 11, fill: C.slate }} />
-              <YAxis tick={{ fontSize: 11, fill: C.slate }} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12 }} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="collected" name="Collected" fill={C.mintDark} radius={[4,4,0,0]} stackId="a" />
-              <Bar dataKey="outstanding" name="Outstanding" fill={C.roseDark} radius={[4,4,0,0]} stackId="a" />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Payment Stage Table */}
+      <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #F3F4F6", fontSize: 13, fontWeight: 700, color: OZONE_NAVY }}>Order Payment Status</div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: "#F8FAFF" }}>
+                {["Quotation #", "Customer", "Partner", "Order Value", "Advance Due", "Survey Due", "Despatch Due", "Status"].map(h => (
+                  <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", borderBottom: "1px solid #E5E7EB", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.slice(0, 12).map((r, i) => (
+                <tr key={r.sno} style={{ borderBottom: "1px solid #F3F4F6", background: i % 2 ? "#FAFAFA" : "#fff" }}>
+                  <td style={{ padding: "9px 12px", color: OZONE_NAVY, fontWeight: 600 }}>{r.quotationNumber}</td>
+                  <td style={{ padding: "9px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.customer}</td>
+                  <td style={{ padding: "9px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.partner}</td>
+                  <td style={{ padding: "9px 12px", fontWeight: 600 }}>{fmt(r.basicOrderValue)}</td>
+                  <td style={{ padding: "9px 12px" }}>{fmt(r.basicOrderValue * 0.3)}</td>
+                  <td style={{ padding: "9px 12px" }}>{fmt(r.basicOrderValue * 0.2)}</td>
+                  <td style={{ padding: "9px 12px" }}>{fmt(r.basicOrderValue * 0.5)}</td>
+                  <td style={{ padding: "9px 12px" }}>
+                    <span style={{ background: r.status === "Done" ? "#ECFDF5" : "#FEF2F2", color: r.status === "Done" ? "#065F46" : "#991B1B", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{r.status === "Done" ? "Cleared" : "Pending"}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
-// ─── FUNNEL PAGE ──────────────────────────────────────────────────────────────
-function FunnelPage({ orders }) {
-  const total = orders.length;
-  const stages = [
-    { name: "Enquiry", icon: "📝", count: total, color: C.navy },
-    { name: "Quotation", icon: "📄", count: Math.round(total * 0.88), color: "#1a4a9a" },
-    { name: "Commercial Approval", icon: "✔", count: Math.round(total * 0.78), color: C.steel },
-    { name: "Survey", icon: "📐", count: Math.round(total * 0.70), color: "#3a7fb5" },
-    { name: "Production", icon: "⚙", count: Math.round(total * 0.62), color: C.gold },
-    { name: "Dispatch", icon: "🚚", count: Math.round(total * 0.54), color: C.amberDark },
-    { name: "Installation", icon: "🔧", count: Math.round(total * 0.47), color: C.mintDark },
-    { name: "Handover", icon: "🤝", count: Math.round(total * 0.42), color: "#0a7a52" },
-    { name: "Completed", icon: "✅", count: orders.filter(o => o.status === "Done").length, color: "#065c3c" },
-  ];
+// ─── Order Punch ───
+function OrderPunch({ onSubmit }) {
+  const [form, setForm] = useState({
+    zm: "", rsm: "", month: "", quarter: "", year: "2024", status: "Pending", product: "Aluminium Doors & Windows",
+    zone: "", salesPerson: "", customer: "", partner: "", totalQty: "", basicOrderValue: "",
+    quotationNumber: "", invoiceNo: "", category: "", color: "", address: "", location: "",
+    advancePercent: 30, surveyPercent: 20, despatchPercent: 50, enquirySource: "Ozone",
+    itemType: "Kit", dateOfOrder: new Date().toISOString().slice(0, 10),
+    technicalValidation: "", finalRemark: "",
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const inp = (label, key, type = "text", opts = null) => (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>
+      {opts ? (
+        <select value={form[key]} onChange={e => set(key, e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E5E7EB", borderRadius: 7, fontSize: 13, boxSizing: "border-box" }}>
+          <option value="">— Select —</option>
+          {opts.map(o => <option key={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input type={type} value={form[key]} onChange={e => set(key, e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E5E7EB", borderRadius: 7, fontSize: 13, boxSizing: "border-box" }} />
+      )}
+    </div>
+  );
+
+  const handleSubmit = () => {
+    if (!form.customer || !form.basicOrderValue) { alert("Please fill in Customer Name and Basic Order Value."); return; }
+    setSubmitted(true);
+    setTimeout(() => { setSubmitted(false); onSubmit && onSubmit(form); }, 2000);
+  };
 
   return (
-    <>
-      <div className="page-header">
-        <div className="page-title">Sales Funnel</div>
-        <div className="page-subtitle">Order lifecycle conversion from enquiry to completion</div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
-        <div className="chart-card">
-          <div className="chart-title">Order Conversion Funnel</div>
-          <div className="funnel-wrap">
-            {stages.map((s, i) => {
-              const pct = Math.round(s.count / total * 100);
-              const dropPct = i > 0 ? Math.round((stages[i - 1].count - s.count) / stages[i - 1].count * 100) : 0;
-              return (
-                <div className="funnel-stage" key={s.name}>
-                  <div className="funnel-bar-wrap">
-                    <div className="funnel-bar-bg">
-                      <div className="funnel-bar-fill" style={{ width: `${pct}%`, background: s.color }}>
-                        <span className="funnel-stage-name">{s.icon} {s.name}</span>
-                        <span className="funnel-stage-count">({s.count})</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="funnel-meta">
-                    <span className="funnel-pct">{pct}%</span>
-                    {i > 0 && <div style={{ fontSize: 11, color: C.roseDark }}>▼ {dropPct}% drop</div>}
-                  </div>
-                </div>
-              );
-            })}
+    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+      {submitted && (
+        <div style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 10, padding: "14px 18px", marginBottom: 16, color: "#065F46", fontWeight: 600, fontSize: 14 }}>
+          ✅ Order punched successfully! Syncing to data source…
+        </div>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+        {/* Section 1: Order Info */}
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: OZONE_NAVY, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1, borderBottom: "2px solid " + OZONE_NAVY, paddingBottom: 8 }}>📋 Order Information</div>
+          {inp("Date of Order", "dateOfOrder", "date")}
+          {inp("Quotation Number", "quotationNumber")}
+          {inp("Year", "year", "text", ["2023", "2024", "2025"])}
+          {inp("Month", "month", "text", ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])}
+          {inp("Quarter", "quarter", "text", ["Q1", "Q2", "Q3", "Q4"])}
+          {inp("Status", "status", "text", ["Pending", "Quotation Sent", "Survey", "Production", "Dispatch", "Installation", "Done"])}
+          {inp("Enquiry Source", "enquirySource", "text", ["Ozone", "Partner"])}
+          {inp("Item Type", "itemType", "text", ["Kit", "Customised"])}
+        </div>
+        {/* Section 2: Customer & Product */}
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: OZONE_NAVY, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1, borderBottom: "2px solid " + OZONE_NAVY, paddingBottom: 8 }}>👤 Customer & Product</div>
+          {inp("Customer Name (Ship To)", "customer")}
+          {inp("Product", "product", "text", ["Aluminium Doors & Windows", "UPVC Windows"])}
+          {inp("Category", "category", "text", ["Premium", "Standard", "Economy"])}
+          {inp("Color", "color")}
+          {inp("Total Qty", "totalQty", "number")}
+          {inp("Basic Order Value (₹ Lakhs)", "basicOrderValue", "number")}
+          {inp("Address", "address")}
+          {inp("Location", "location")}
+          {inp("Invoice No", "invoiceNo")}
+        </div>
+        {/* Section 3: Team & Payment */}
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: OZONE_NAVY, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1, borderBottom: "2px solid " + OZONE_NAVY, paddingBottom: 8 }}>🏢 Team & Payment</div>
+          {inp("Zone", "zone", "text", ["North", "South", "East", "West", "Central"])}
+          {inp("Zonal Manager (ZM)", "zm")}
+          {inp("Regional Sales Manager", "rsm")}
+          {inp("Sales Person", "salesPerson")}
+          {inp("Ozo Blu Partner (as per SAP)", "partner")}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Advance %</label>
+            <input type="range" min="0" max="100" value={form.advancePercent} onChange={e => set("advancePercent", e.target.value)} style={{ width: "100%" }} />
+            <div style={{ fontSize: 11, color: "#6B7280", textAlign: "right" }}>{form.advancePercent}%</div>
+          </div>
+          {inp("Technical Validation", "technicalValidation")}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Final Remark</label>
+            <textarea value={form.finalRemark} onChange={e => set("finalRemark", e.target.value)} rows={3} style={{ width: "100%", padding: "8px 10px", border: "1.5px solid #E5E7EB", borderRadius: 7, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </div>
+      </div>
+      <div style={{ marginTop: 20, display: "flex", gap: 12, justifyContent: "flex-end" }}>
+        <button onClick={() => setForm(f => ({ ...f, customer: "", basicOrderValue: "", quotationNumber: "", totalQty: "" }))} style={{ padding: "10px 24px", border: "1.5px solid #E5E7EB", background: "#fff", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Clear Form</button>
+        <button onClick={handleSubmit} style={{ padding: "10px 32px", background: OZONE_NAVY, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          ✓ Submit Order
+        </button>
+      </div>
+    </div>
+  );
+}
 
-        <div>
-          <div className="chart-card" style={{ marginBottom: 16 }}>
-            <div className="chart-title">Conversion KPIs</div>
-            {[
-              { label: "Enquiry → Quote", pct: 88, color: C.navy },
-              { label: "Quote → Approval", pct: 89, color: C.steel },
-              { label: "Approval → Survey", pct: 90, color: C.gold },
-              { label: "Survey → Production", pct: 89, color: C.amberDark },
-              { label: "Production → Done", pct: 82, color: C.mintDark },
-              { label: "Overall Conversion", pct: Math.round(orders.filter(o => o.status === "Done").length / total * 100), color: C.navyDark },
-            ].map(c => (
-              <div key={c.label} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                  <span style={{ color: C.slate }}>{c.label}</span>
-                  <span style={{ fontWeight: 700, color: c.color }}>{c.pct}%</span>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${c.pct}%`, background: c.color }} />
-                </div>
+// ─── Settings ───
+function Settings({ user }) {
+  const [tab, setTab] = useState("datasource");
+  const [sheetUrl, setSheetUrl] = useState("");
+  const [connected, setConnected] = useState(false);
+  const tabs = [["datasource", "Data Source"], ["columns", "Column Mapping"], ["kpis", "KPI Config"], ["users", "User Management"], ["filters", "Filter Config"]];
+
+  return (
+    <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid #E5E7EB", paddingBottom: 0 }}>
+        {tabs.map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ padding: "8px 16px", border: "none", borderBottom: tab === id ? `2px solid ${OZONE_NAVY}` : "2px solid transparent", background: "transparent", color: tab === id ? OZONE_NAVY : "#6B7280", fontSize: 13, fontWeight: tab === id ? 700 : 400, cursor: "pointer" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "datasource" && (
+        <div style={{ maxWidth: 600 }}>
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: OZONE_NAVY, marginBottom: 4 }}>Google Sheets Integration</div>
+            <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 18 }}>Connect your live Google Sheet as the data source for all dashboards and reports.</div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>SHEET URL OR ID</label>
+            <input value={sheetUrl} onChange={e => setSheetUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..." style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #E5E7EB", borderRadius: 7, fontSize: 13, boxSizing: "border-box", marginBottom: 12 }} />
+            <button onClick={() => setConnected(true)} style={{ padding: "9px 20px", background: OZONE_NAVY, color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {connected ? "✓ Connected" : "Connect Sheet"}
+            </button>
+            {connected && <div style={{ marginTop: 12, padding: "10px 14px", background: "#ECFDF5", borderRadius: 7, fontSize: 12, color: "#065F46" }}>✅ Sheet connected. Auto-sync enabled every 5 minutes.</div>}
+          </div>
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px", marginTop: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>System Status</div>
+            {[["Data Source", "Connected (Demo)", "#10B981"], ["Last Sync", "Just now", "#6B7280"], ["Total Records", "120", "#6B7280"], ["Schema Version", "94 columns · v1.0", "#6B7280"]].map(([k, v, c]) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #F3F4F6", fontSize: 13 }}>
+                <span style={{ color: "#6B7280" }}>{k}</span><span style={{ fontWeight: 600, color: c }}>{v}</span>
               </div>
             ))}
           </div>
+        </div>
+      )}
 
-          <div className="chart-card">
-            <div className="chart-title">Stage Distribution</div>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={stages.slice(0, 5).map(s => ({ name: s.name, value: s.count - (stages[stages.indexOf(s) + 1]?.count || 0) }))}
-                  cx="50%" cy="50%" outerRadius={72} dataKey="value" label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
-                  {stages.slice(0, 5).map((s, i) => <Cell key={i} fill={s.color} />)}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
+      {tab === "columns" && (
+        <div>
+          <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 14 }}>All 94 columns from the connected spreadsheet — mapped to platform modules.</div>
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: "#F8FAFF" }}>
+                  {["#", "Column Name", "Type", "Mapped To", "Status"].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  [1, "ZM", "Text", "Zone Manager field", "Active"],
+                  [2, "RSM", "Text", "Regional Manager", "Active"],
+                  [3, "Month", "Text", "Filters, Trend Charts", "Active"],
+                  [7, "Status", "Text", "Order Status KPIs", "Active"],
+                  [10, "S.No.", "Number", "Order Count KPI", "Active"],
+                  [16, "Sales Person", "Text", "Sales Leaderboard", "Active"],
+                  [19, "Product", "Text", "Product Analytics", "Active"],
+                  [22, "Total Qty", "Number", "Qty KPIs", "Active"],
+                  [25, "Basic Order Value", "Currency", "Revenue KPIs", "Active"],
+                  [30, "Total Order Value", "Currency", "Commercial Reports", "Active"],
+                  [33, "Zone", "Text", "Zone Filters & Charts", "Active"],
+                  [34, "Quotation Number", "Text", "Search, Tracking", "Active"],
+                  [67, "Production Order to Factory", "Date", "Funnel Stage", "Active"],
+                  [85, "Despatch Date", "Date", "Dispatch Stage", "Active"],
+                  [93, "Handover", "Date", "Completion Stage", "Active"],
+                ].map(([n, col, type, mapped, status]) => (
+                  <tr key={n} style={{ borderBottom: "1px solid #F3F4F6" }}>
+                    <td style={{ padding: "8px 12px", color: "#9CA3AF" }}>{n}</td>
+                    <td style={{ padding: "8px 12px", fontWeight: 600, color: OZONE_NAVY }}>{col}</td>
+                    <td style={{ padding: "8px 12px", color: "#6B7280" }}>{type}</td>
+                    <td style={{ padding: "8px 12px" }}>{mapped}</td>
+                    <td style={{ padding: "8px 12px" }}><span style={{ background: "#ECFDF5", color: "#065F46", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
-    </>
+      )}
+
+      {tab === "users" && (
+        <div style={{ maxWidth: 600 }}>
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Platform Users</div>
+            {[{ name: "Admin User", role: "Administrator", access: "Full Access" }, { name: "Sales Manager", role: "Sales", access: "Dashboard + Orders + Punch" }, { name: "Operations Head", role: "Operations", access: "Orders + Funnel + Analytics" }].map((u, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #F3F4F6" }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", background: OZONE_NAVY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14 }}>{u.name.charAt(0)}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{u.name}</div>
+                  <div style={{ fontSize: 11, color: "#9CA3AF" }}>{u.access}</div>
+                </div>
+                <span style={{ background: "#EEF3FF", color: OZONE_NAVY, padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{u.role}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(tab === "kpis" || tab === "filters") && (
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 8 }}>{tab === "kpis" ? "KPI Configuration" : "Filter Configuration"}</div>
+          <div style={{ fontSize: 12, color: "#6B7280" }}>All {tab === "kpis" ? "9 executive KPIs" : "filter axes"} are auto-mapped from the connected data source. Modify visibility, labels, and thresholds below.</div>
+          <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {(tab === "kpis" ? ["Total Orders", "Total Qty", "Total Order Value", "Completed Orders", "Completed Value", "Pending Orders", "Pending Value", "Aluminium Qty", "UPVC Qty"] : ["Zone", "Product", "Status", "Month", "Quarter", "Sales Person", "Partner", "Customer"]).map(k => (
+              <div key={k} style={{ background: "#F8FAFF", border: "1px solid #E5E7EB", borderRadius: 8, padding: "8px 14px", fontSize: 12, color: OZONE_NAVY, fontWeight: 600 }}>
+                ✓ {k}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// ─── Main App ───
 export default function App() {
   const [user, setUser] = useState(null);
   const [page, setPage] = useState("dashboard");
-  const [filters, setFilters] = useState({ zone: "All", product: "All", month: "All", quarter: "All", status: "All" });
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const searchRef = useRef(null);
+  const [search, setSearch] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+  const [filters, setFilters] = useState({ zone: "All", product: "All", status: "All", month: "All" });
 
-  const filteredOrders = useMemo(() => {
-    return ALL_ORDERS.filter(o => {
-      if (filters.zone !== "All" && o.zone !== filters.zone) return false;
-      if (filters.product !== "All" && o.product !== filters.product) return false;
-      if (filters.month !== "All" && o.month !== filters.month) return false;
-      if (filters.quarter !== "All" && o.quarter !== filters.quarter) return false;
-      if (filters.status !== "All" && o.status !== filters.status) return false;
-      return true;
-    });
+  const filteredData = useMemo(() => {
+    let d = ALL_DATA;
+    if (filters.zone !== "All") d = d.filter(r => r.zone === filters.zone);
+    if (filters.product !== "All") d = d.filter(r => r.product === filters.product);
+    if (filters.status !== "All") d = d.filter(r => r.status === filters.status);
+    if (filters.month !== "All") d = d.filter(r => r.month === filters.month);
+    return d;
   }, [filters]);
 
-  const handleSearch = (q) => {
-    setSearchQuery(q);
-    if (q.length < 2) { setSearchResults([]); return; }
-    const ql = q.toLowerCase();
-    const results = ALL_ORDERS.filter(o =>
-      o.quotationNumber.toLowerCase().includes(ql) ||
-      o.customer.toLowerCase().includes(ql) ||
-      o.partner.toLowerCase().includes(ql) ||
-      o.salesPerson.toLowerCase().includes(ql) ||
-      o.zone.toLowerCase().includes(ql) ||
-      o.state.toLowerCase().includes(ql) ||
-      String(o.sno).includes(q)
-    ).slice(0, 8);
-    setSearchResults(results);
-  };
-
-  if (!user) return (
-    <>
-      <style>{styles}</style>
-      <LoginPage onLogin={setUser} />
-    </>
-  );
+  if (!user) return <LoginScreen onLogin={setUser} />;
 
   return (
-    <>
-      <style>{styles}</style>
-      <div className="app">
-        {/* TOPBAR */}
-        <div className="topbar">
-          <OzoneLogo size={26} white />
-          <div className="topbar-search" ref={searchRef}>
-            <span className="search-icon">🔍</span>
-            <input placeholder="Search orders, customers, partners, quotes…"
-              value={searchQuery} onChange={e => handleSearch(e.target.value)}
-              onBlur={() => setTimeout(() => setSearchResults([]), 200)} />
-            {searchResults.length > 0 && (
-              <div className="search-results">
-                {searchResults.map(r => (
-                  <div key={r.sno} className="search-item" onClick={() => { setPage("orders"); setSearchResults([]); setSearchQuery(""); }}>
-                    <div className="search-item-main">#{r.sno} · {r.quotationNumber} · {r.customer}</div>
-                    <div className="search-item-sub">{r.partner} · {r.zone} · {r.status} · {fmt(r.basicOrderValue)}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="topbar-right">
-            <span className="topbar-badge">{filteredOrders.length} orders</span>
-            <span style={{ fontSize: 12, opacity: 0.7 }}>FY 2025–26</span>
-            <div className="topbar-user">
-              <div className="user-avatar">{user.name.charAt(0)}</div>
-              <div>
-                <div className="user-name">{user.name}</div>
-                <div style={{ fontSize: 10, opacity: 0.65 }}>{user.role}</div>
-              </div>
-            </div>
-            <button style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", padding: "5px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
-              onClick={() => setUser(null)}>Logout</button>
-          </div>
-        </div>
-
-        <div className="layout">
-          {/* SIDENAV */}
-          <div className="sidenav">
-            <div className="sidenav-section">Main</div>
-            {PAGES.map(p => (
-              <div key={p.id} className={`nav-item ${page === p.id ? "active" : ""}`} onClick={() => setPage(p.id)}>
-                <span className="nav-icon">{p.icon}</span>
-                <span>{p.label}</span>
-              </div>
-            ))}
-            <div className="sidenav-section" style={{ marginTop: 16 }}>Zone</div>
-            {["North","South","East","West","Central"].map(z => (
-              <div key={z} className={`nav-item ${filters.zone === z ? "active" : ""}`}
-                onClick={() => setFilters(f => ({ ...f, zone: f.zone === z ? "All" : z }))}>
-                <span className="nav-icon">📍</span>
-                <span>{z}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* MAIN */}
-          <div className="main">
-            <FilterBar filters={filters} onChange={setFilters} orders={ALL_ORDERS} />
-            {page === "dashboard" && <Dashboard orders={filteredOrders} />}
-            {page === "orders" && <OrdersPage orders={filteredOrders} />}
-            {page === "analytics" && <AnalyticsPage orders={filteredOrders} />}
-            {page === "partners" && <PartnersPage orders={filteredOrders} />}
-            {page === "payments" && <PaymentsPage orders={filteredOrders} />}
-            {page === "funnel" && <FunnelPage orders={filteredOrders} />}
-          </div>
-        </div>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "system-ui,-apple-system,sans-serif", background: "#F9FAFB", overflow: "hidden" }}>
+      <Sidebar active={page} onNav={setPage} user={user} onLogout={() => setUser(null)} collapsed={collapsed} setCollapsed={setCollapsed} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <TopBar page={page} user={user} search={search} setSearch={setSearch} data={filteredData} />
+        {page !== "punch" && page !== "settings" && <FilterBar filters={filters} setFilters={setFilters} data={ALL_DATA} />}
+        {page === "dashboard" && <Dashboard data={filteredData} />}
+        {page === "orders" && <OrderManagement data={filteredData} search={search} />}
+        {page === "funnel" && <SalesFunnel data={filteredData} />}
+        {page === "analytics" && <Analytics data={filteredData} />}
+        {page === "partners" && <Partners data={filteredData} />}
+        {page === "payments" && <PaymentTracker data={filteredData} />}
+        {page === "punch" && <OrderPunch />}
+        {page === "settings" && <Settings user={user} />}
       </div>
-    </>
+    </div>
   );
 }
