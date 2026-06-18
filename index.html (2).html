@@ -755,7 +755,11 @@ const PAGES = [
   null,
   {id:'settings', icon:'⚙',label:'Settings',  group:'Admin'},
 ];
-const PAGE_TITLE = {dashboard:'Dashboard',orders:'Orders',punch:'New Order',analytics:'Analytics',funnel:'Sales Funnel',partners:'Partner Performance',payments:'Payment Tracker',settings:'Settings & Admin'};
+const PAGE_TITLE = {
+  dashboard:'Dashboard', orders:'Orders', punch:'New Order',
+  analytics:'Analytics', funnel:'Sales Funnel', partners:'Partner Performance',
+  payments:'Payment Tracker', settings:'Settings & Administration'
+};
 
 function renderSidebar() {
   const slim = S.slim;
@@ -819,21 +823,21 @@ function renderTopbar() {
    FILTERBAR
 ═══════════════════════════════════════════════════════ */
 function renderFilters() {
-  const rows = allRows();
   function mkSel(field, opts) {
     const s = el('select',{cls:'filter-sel',onchange:e=>{const f={...S.filters};f[field]=e.target.value;set({filters:f,ordPage:1});}},
       ...opts.map(o=>{const opt=el('option',{value:o},o);if(S.filters[field]===o)opt.selected=true;return opt;})
     );
     return s;
   }
-  return el('div',{id:'filterbar'},
-    el('span',{cls:'filter-label'},'Filter:'),
-    mkSel('zone', ['All',...new Set(rows.map(r=>r.zone).filter(Boolean))]),
-    mkSel('product', ['All',...new Set(rows.map(r=>r.product).filter(Boolean))]),
-    mkSel('status', ['All',...new Set(rows.map(r=>r.status).filter(Boolean))]),
-    mkSel('month', ['All',...MONTHS]),
-    el('button',{cls:'btn-ghost',onclick:()=>set({filters:{zone:'All',product:'All',status:'All',month:'All'},ordPage:1})},'Clear')
-  );
+  const fc = S.filterConfig;
+  const items = [];
+  items.push(el('span',{cls:'filter-label'},'Filter:'));
+  if(fc.zone)    items.push(mkSel('zone',    ['All',...S.masterZones]));
+  if(fc.product) items.push(mkSel('product', ['All',...S.masterProducts]));
+  if(fc.status)  items.push(mkSel('status',  ['All',...S.masterStatuses]));
+  if(fc.month)   items.push(mkSel('month',   ['All',...MONTHS]));
+  items.push(el('button',{cls:'btn-ghost',onclick:()=>set({filters:{zone:'All',product:'All',status:'All',month:'All'},ordPage:1})},'Clear'));
+  return el('div',{id:'filterbar'},...items);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -900,17 +904,17 @@ function renderDashboard() {
   const maxPV=topPart[0]?.[1]||1;
 
   return el('div',{id:'page-body'},
-    // KPI row
+    // KPI row — respects kpiConfig visibility settings
     el('div',{cls:'kpi-grid'},
-      kpi('Total Orders',      data.length,           null,                    'blue'),
-      kpi('Total Qty',         fmtN(totalQty),        'Window units',          'blue'),
-      kpi('Order Value',       fmtL(totalVal),        'Basic value',           'blue'),
-      kpi('Completed',         done.length,           pct(done.length,data.length)+'% rate','green'),
-      kpi('Completed Value',   fmtL(doneVal),         'Realised',              'green'),
-      kpi('Pending Orders',    pend.length,           pct(pend.length,data.length)+'% open','amber'),
-      kpi('Pending Value',     fmtL(pendVal),         'Pipeline',              'amber'),
-      kpi('Aluminium Qty',     fmtN(alumQty),         'Doors & Windows',       'purple'),
-      kpi('UPVC Qty',          fmtN(upvcQty),         'Windows',               'purple'),
+      S.kpiConfig.totalOrders    ? kpi('Total Orders',     data.length,                                   null,                     'blue')   : null,
+      S.kpiConfig.totalQty       ? kpi('Total Qty',        fmtN(totalQty),                                'Window units',           'blue')   : null,
+      S.kpiConfig.orderValue     ? kpi('Order Value',      fmtL(totalVal),                                'Basic value',            'blue')   : null,
+      S.kpiConfig.completed      ? kpi('Completed',        done.length,                                   pct(done.length,data.length)+'% rate','green')  : null,
+      S.kpiConfig.completedValue ? kpi('Completed Value',  fmtL(doneVal),                                 'Realised',               'green')  : null,
+      S.kpiConfig.pending        ? kpi('Pending Orders',   pend.length,                                   pct(pend.length,data.length)+'% open','amber')  : null,
+      S.kpiConfig.pendingValue   ? kpi('Pending Value',    fmtL(pendVal),                                 'Pipeline',               'amber')  : null,
+      S.kpiConfig.alumQty        ? kpi('Aluminium Qty',    fmtN(alumQty),                                 'Doors & Windows',        'purple') : null,
+      S.kpiConfig.upvcQty        ? kpi('UPVC Qty',         fmtN(upvcQty),                                 'Windows',                'purple') : null,
     ),
     // Row 1: chart + zone
     el('div',{cls:'grid-2'},
@@ -1060,13 +1064,18 @@ function showModal(orig) {
     {t:'Installation & Close',ks:['siteReceipt','paidReorder','focReorder','installStart','installEnd','audit','handover']},
     {t:'Notes',            ks:['remarks','orderSummary','finalRemark']},
   ];
+  const MODAL_DYNA = {
+    zone: S.masterZones, status: S.masterStatuses,
+    product: S.masterProducts, partner: S.masterPartners, salesPerson: S.masterSalesPpl,
+  };
   function mkField(key) {
     const s=SMAP[key]; if(!s) return null;
     const val=row[key]??'';
     let inp;
     if(s.t==='sel'){
+      const opts = MODAL_DYNA[key] || s.o || [];
       inp=el('select',{onchange:e=>row[key]=e.target.value},
-        ...(s.o||[]).map(o=>{const opt=el('option',{value:o},o);if(o==val)opt.selected=true;return opt;})
+        ...opts.map(o=>{const opt=el('option',{value:o},o);if(String(o)===String(val))opt.selected=true;return opt;})
       );
     } else if(s.t==='area'){
       inp=el('textarea',{rows:2,oninput:e=>row[key]=e.target.value},val);
@@ -1094,10 +1103,20 @@ function showModal(orig) {
       el('div',{cls:'modal-footer'},
         el('button',{cls:'btn btn-secondary',onclick:()=>overlay.remove()},'Cancel'),
         el('button',{cls:'btn btn-primary',onclick:()=>{
-          const src=S.liveData||DEMO;
-          const i=src.findIndex(r=>r.sno===orig.sno);
-          if(i>=0) src[i]=row;
-          else { const si=S.sessionOrders.findIndex(r=>r.sno===orig.sno); if(si>=0)S.sessionOrders[si]=row; }
+          // Try liveData first, then DEMO, then sessionOrders
+          let saved = false;
+          if(S.liveData) {
+            const i=S.liveData.findIndex(r=>String(r.sno)===String(orig.sno));
+            if(i>=0){S.liveData[i]=row;saved=true;}
+          }
+          if(!saved){
+            const i=DEMO.findIndex(r=>String(r.sno)===String(orig.sno));
+            if(i>=0){DEMO[i]=row;saved=true;}
+          }
+          if(!saved){
+            const si=S.sessionOrders.findIndex(r=>String(r.sno)===String(orig.sno));
+            if(si>=0)S.sessionOrders[si]=row;
+          }
           overlay.remove();
           draw();
         }},'Save Changes')
@@ -1113,7 +1132,7 @@ function showModal(orig) {
 function renderPunch() {
   const draft={};
   SCH.forEach(s=>draft[s.k]='');
-  draft.sno = allRows().length+1;
+  draft.sno = Date.now(); // unique ID; will be overwritten by sheet row number when synced
   draft.year='2024'; draft.advance=30; draft.survey=20; draft.despatch=50;
   const sucMsg=el('div',{cls:'alert alert-success',style:{display:'none'}},'✓ Order created. Redirecting to orders…');
   const sections=[
@@ -1124,13 +1143,19 @@ function renderPunch() {
     {t:'Team',         ks:['zone','zm','rsm','salesPerson']},
     {t:'Notes',        ks:['techVal','remarks','finalRemark']},
   ];
+  // Use master data for dynamic dropdowns so any admin changes reflect here
+  const DYNA_OPTS = {
+    zone:S.masterZones, status:S.masterStatuses,
+    product:S.masterProducts, partner:S.masterPartners, salesPerson:S.masterSalesPpl,
+  };
   function mkField(key) {
     const s=SMAP[key]; if(!s) return null;
     let inp;
     if(s.t==='sel'){
+      const opts = DYNA_OPTS[key] || s.o || [];
       inp=el('select',{onchange:e=>draft[key]=e.target.value},
         el('option',{value:''},'— Select —'),
-        ...(s.o||[]).map(o=>el('option',{value:o},o))
+        ...opts.map(o=>el('option',{value:o},o))
       );
     } else if(s.t==='area'){
       inp=el('textarea',{rows:2,oninput:e=>draft[key]=e.target.value});
@@ -1152,7 +1177,8 @@ function renderPunch() {
       el('button',{cls:'btn btn-primary',onclick:()=>{
         if(!draft.customer&&!draft.quotationNo){alert('Customer Name or Quotation Number is required.');return;}
         draft.basicOrderValue=parseFloat(draft.basicOrderValue)||0;
-        draft.totalOrderValue=parseFloat(draft.totalOrderValue)||+(draft.basicOrderValue*1.18).toFixed(2);
+        const gst = 1 + (S.businessRules.gstRate||18)/100;
+        draft.totalOrderValue=parseFloat(draft.totalOrderValue)||+(draft.basicOrderValue*gst).toFixed(2);
         draft.totalQty=parseInt(draft.totalQty)||0;
         S.sessionOrders.push({...draft});
         sucMsg.style.display='block';
@@ -1167,7 +1193,7 @@ function renderPunch() {
 ═══════════════════════════════════════════════════════ */
 function renderAnalytics() {
   const data=filtered();
-  const zRows=ZONES.map(z=>{
+  const zRows=(S.masterZones||ZONES).map(z=>{
     const zd=data.filter(d=>d.zone===z);
     const done=cnt(zd,r=>r.status==='Done');
     return{zone:z,orders:zd.length,done,pend:zd.length-done,val:sum(zd,'basicOrderValue'),qty:sum(zd,'totalQty')};
@@ -1231,15 +1257,26 @@ function renderAnalytics() {
 ═══════════════════════════════════════════════════════ */
 function renderFunnel() {
   const data=filtered();
+  // Build funnel dynamically from masterStatuses order
+  const ST = S.masterStatuses;
+  const doneIdx   = ST.indexOf('Done');
+  const instIdx   = ST.indexOf('Installation');
+  const dispIdx   = ST.indexOf('Dispatch');
+  const prodIdx   = ST.indexOf('Production');
+  const survIdx   = ST.indexOf('Survey');
+  const wonIdx    = ST.indexOf('Mark as Won');
+  const quoteIdx  = ST.indexOf('Quotation Sent');
+  // Statuses that count as "at or past" a stage = all statuses from that index onwards + Done
+  function atOrPast(idx){ return idx<0?[]:ST.slice(idx); }
   const stages=[
-    {label:'Total Enquiries',    fn:r=>true,                               bg:'#1e3a5f'},
-    {label:'Quotation Sent',     fn:r=>['Quotation Sent','Mark as Won','Survey','Production','Dispatch','Installation','Done'].includes(r.status),bg:'#1e4d8c'},
-    {label:'Mark as Won',        fn:r=>['Mark as Won','Survey','Production','Dispatch','Installation','Done'].includes(r.status),bg:'#2563eb'},
-    {label:'Survey Completed',   fn:r=>['Survey','Production','Dispatch','Installation','Done'].includes(r.status),bg:'#1d4ed8'},
-    {label:'In Production',      fn:r=>['Production','Dispatch','Installation','Done'].includes(r.status),bg:'#1e40af'},
-    {label:'Dispatched',         fn:r=>['Dispatch','Installation','Done'].includes(r.status),bg:'#1e3a8a'},
-    {label:'Installation',       fn:r=>['Installation','Done'].includes(r.status),bg:'#312e81'},
-    {label:'Completed (Done)',   fn:r=>r.status==='Done',                  bg:'#16a34a'},
+    {label:'Total Enquiries',   fn:r=>true,                                        bg:'#1e3a5f'},
+    {label:'Quotation Sent',    fn:r=>atOrPast(quoteIdx).includes(r.status)||r.status==='Done', bg:'#1e4d8c'},
+    {label:'Mark as Won',       fn:r=>atOrPast(wonIdx).includes(r.status)||r.status==='Done',   bg:'#2563eb'},
+    {label:'Survey Completed',  fn:r=>atOrPast(survIdx).includes(r.status)||r.status==='Done',  bg:'#1d4ed8'},
+    {label:'In Production',     fn:r=>atOrPast(prodIdx).includes(r.status)||r.status==='Done',  bg:'#1e40af'},
+    {label:'Dispatched',        fn:r=>atOrPast(dispIdx).includes(r.status)||r.status==='Done',  bg:'#1e3a8a'},
+    {label:'Installation',      fn:r=>atOrPast(instIdx).includes(r.status)||r.status==='Done',  bg:'#312e81'},
+    {label:'Completed (Done)',  fn:r=>r.status==='Done',                                        bg:'#16a34a'},
   ];
   return el('div',{id:'page-body'},
     el('p',{cls:'section-hint'},'Cumulative order lifecycle from enquiry through completion.'),
@@ -1313,8 +1350,15 @@ function renderPayments() {
   const data=filtered();
   const tv=sum(data,'basicOrderValue');
   const col=sum(data.filter(r=>r.status==='Done'),'basicOrderValue');
-  const adv=tv*0.3,surv=tv*0.2,desp=tv*0.5;
-  const stages=[{l:'Advance (30%)',due:adv,col:adv*0.85,c:'#2563eb'},{l:'Survey (20%)',due:surv,col:surv*0.60,c:'#7c3aed'},{l:'Despatch (50%)',due:desp,col:desp*0.40,c:'#16a34a'}];
+  const advPct  = (S.businessRules.advancePct  || 30) / 100;
+  const survPct = (S.businessRules.surveyPct   || 20) / 100;
+  const despPct = (S.businessRules.despatchPct || 50) / 100;
+  const adv=tv*advPct, surv=tv*survPct, desp=tv*despPct;
+  const stages=[
+    {l:'Advance ('+(S.businessRules.advancePct||30)+'%)',  due:adv,  col:adv*0.85,  c:'#2563eb'},
+    {l:'Survey ('+(S.businessRules.surveyPct||20)+'%)',    due:surv, col:surv*0.60, c:'#7c3aed'},
+    {l:'Despatch ('+(S.businessRules.despatchPct||50)+'%)',due:desp, col:desp*0.40, c:'#16a34a'},
+  ];
   return el('div',{id:'page-body'},
     el('div',{cls:'kpi-grid'},
       ...([['Total Billed',fmtL(tv),null,'blue'],['Collected',fmtL(col),'From completed orders','green'],['Outstanding',fmtL(tv-col),'Remaining','red'],
@@ -1351,9 +1395,9 @@ function renderPayments() {
           el('tbody',{},...data.slice(0,20).map(r=>el('tr',{},
             el('td',{cls:'primary'},r.quotationNo||'—'),el('td',{},r.customer||'—'),el('td',{},r.partner||'—'),
             el('td',{cls:'num'},(parseFloat(r.basicOrderValue)||0).toFixed(2)),
-            el('td',{cls:'num'},((parseFloat(r.basicOrderValue)||0)*0.3).toFixed(2)),
-            el('td',{cls:'num'},((parseFloat(r.basicOrderValue)||0)*0.2).toFixed(2)),
-            el('td',{cls:'num'},((parseFloat(r.basicOrderValue)||0)*0.5).toFixed(2)),
+            el('td',{cls:'num'},((parseFloat(r.basicOrderValue)||0)*advPct).toFixed(2)),
+            el('td',{cls:'num'},((parseFloat(r.basicOrderValue)||0)*survPct).toFixed(2)),
+            el('td',{cls:'num'},((parseFloat(r.basicOrderValue)||0)*despPct).toFixed(2)),
             el('td',{html:statusBadge(r.status||'Pending')})
           )))
         )
@@ -1730,7 +1774,7 @@ function renderSettings() {
   /* ── MASTER DATA ──────────────────────────────────────────────── */
   else if (t==='masterdata') {
     function tagPanel(title, stateKey, hint) {
-      const items = S[stateKey];
+      const items = S[stateKey] || [];
       let newVal = '';
       const addInp = el('input',{type:'text',placeholder:'Add new item…',oninput:e=>newVal=e.target.value});
       return el('div',{cls:'panel',style:{marginBottom:'14px'}},
@@ -1871,10 +1915,7 @@ function draw() {
   root.innerHTML = '';
   if (!S.user) { root.appendChild(renderLogin()); return; }
   // Redirect if current page is not allowed for this role
-  if (!canAccess(S.page)) {
-    const allowed = ROLE_PAGES[S.user.role];
-    if (!allowed.has(S.page)) { S.page = 'dashboard'; }
-  }
+  if (!canAccess(S.page)) { S.page = 'dashboard'; }
   const fn = canAccess(S.page) ? (PAGE_FN[S.page] || renderDashboard) : renderAccessDenied;
   const shell = el('div',{id:'shell'},
     renderSidebar(),
