@@ -1,11 +1,35 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ozone Order Tracker — Enterprise Platform</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body,#root{height:100%;width:100%;overflow:hidden;}
+  body{font-family:system-ui,-apple-system,sans-serif;background:#F9FAFB;}
+  input,select,textarea{font-family:inherit;outline:none;}
+  button{font-family:inherit;cursor:pointer;}
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:#F3F4F6;}
+  ::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+ 
+ 
 const LOGO_B64 = "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";
-
+ 
 const OZONE_NAVY = "#002060";
 const OZONE_GOLD = "#C9A227";
 const OZONE_LIGHT = "#EEF3FF";
-
+ 
 // ─── Synthetic demo data (mimics the 94-column schema) ───
 function generateDemoData() {
   const zones = ["North", "South", "East", "West", "Central"];
@@ -16,7 +40,7 @@ function generateDemoData() {
   const statuses = ["Done", "Done", "Done", "Survey", "Production", "Dispatch", "Installation", "Pending", "Quotation Sent"];
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const customers = ["Prestige Builders", "Sobha Developers", "DLF Homes", "Godrej Properties", "Puravankara Projects", "Brigade Group", "Mahindra Lifespace", "Tata Housing", "Lodha Group", "Shapoorji Pallonji"];
-
+ 
   return Array.from({ length: 120 }, (_, i) => {
     const zone = zones[i % zones.length];
     const product = products[i % 2];
@@ -51,21 +75,21 @@ function generateDemoData() {
     };
   });
 }
-
+ 
 const ALL_DATA = generateDemoData();
-
+ 
 // ─── Helpers ───
 const fmt = (n) => n >= 1 ? `₹${n.toFixed(1)}L` : `₹${(n * 100).toFixed(0)}K`;
 const fmtFull = (n) => `₹${n.toFixed(2)} Lakhs`;
 const pct = (a, b) => b === 0 ? 0 : Math.round((a / b) * 100);
-
+ 
 // ─── Auth ───
 function LoginScreen({ onLogin }) {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-
+ 
   const submit = () => {
     if (!user || !pass) { setErr("Please enter credentials."); return; }
     setLoading(true);
@@ -76,7 +100,7 @@ function LoginScreen({ onLogin }) {
       else { setErr("Invalid credentials. Try admin/ozone123"); setLoading(false); }
     }, 800);
   };
-
+ 
   return (
     <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${OZONE_NAVY} 0%, #1a3a7a 60%, #0d2050 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui,sans-serif" }}>
       <div style={{ width: 420, background: "#fff", borderRadius: 16, boxShadow: "0 32px 80px rgba(0,0,0,0.4)", overflow: "hidden" }}>
@@ -108,7 +132,7 @@ function LoginScreen({ onLogin }) {
     </div>
   );
 }
-
+ 
 // ─── Sidebar ───
 const NAV = [
   { id: "dashboard", icon: "⊞", label: "Executive Dashboard" },
@@ -120,7 +144,7 @@ const NAV = [
   { id: "punch", icon: "+", label: "Order Punch" },
   { id: "settings", icon: "⚙", label: "Settings & Admin" },
 ];
-
+ 
 function Sidebar({ active, onNav, user, onLogout, collapsed, setCollapsed }) {
   return (
     <div style={{ width: collapsed ? 64 : 220, background: OZONE_NAVY, color: "#fff", display: "flex", flexDirection: "column", transition: "width .2s", flexShrink: 0, fontFamily: "system-ui,sans-serif" }}>
@@ -149,7 +173,7 @@ function Sidebar({ active, onNav, user, onLogout, collapsed, setCollapsed }) {
     </div>
   );
 }
-
+ 
 // ─── Top Bar ───
 function TopBar({ page, user, search, setSearch, data }) {
   const titles = { dashboard: "Executive Dashboard", orders: "Order Management", funnel: "Sales Funnel", analytics: "Analytics", partners: "Partner Performance", payments: "Payment Tracker", punch: "New Order", settings: "Settings & Admin" };
@@ -169,7 +193,7 @@ function TopBar({ page, user, search, setSearch, data }) {
     </div>
   );
 }
-
+ 
 // ─── Filter Bar ───
 function FilterBar({ filters, setFilters, data }) {
   const zones = ["All", ...new Set(data.map(d => d.zone))];
@@ -189,7 +213,7 @@ function FilterBar({ filters, setFilters, data }) {
     </div>
   );
 }
-
+ 
 // ─── KPI Card ───
 function KpiCard({ label, value, sub, icon, color, trend }) {
   return (
@@ -204,7 +228,7 @@ function KpiCard({ label, value, sub, icon, color, trend }) {
     </div>
   );
 }
-
+ 
 // ─── Executive Dashboard ───
 function Dashboard({ data }) {
   const done = data.filter(d => d.status === "Done");
@@ -215,25 +239,25 @@ function Dashboard({ data }) {
   const totalQty = data.reduce((s, d) => s + d.totalQty, 0);
   const alumQty = data.filter(d => d.product === "Aluminium Doors & Windows").reduce((s, d) => s + d.totalQty, 0);
   const upvcQty = data.filter(d => d.product === "UPVC Windows").reduce((s, d) => s + d.totalQty, 0);
-
+ 
   // Zone breakdown
   const zones = [...new Set(data.map(d => d.zone))];
   const zoneData = zones.map(z => {
     const zd = data.filter(d => d.zone === z);
     return { zone: z, orders: zd.length, value: zd.reduce((s, d) => s + d.basicOrderValue, 0) };
   }).sort((a, b) => b.value - a.value);
-
+ 
   // Monthly trend
   const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const monthData = monthOrder.map(m => {
     const md = data.filter(d => d.month === m);
     return { month: m.slice(0, 3), orders: md.length, value: md.reduce((s, d) => s + d.basicOrderValue, 0) };
   }).filter(m => m.orders > 0);
-
+ 
   // Product split
   const alumVal = data.filter(d => d.product === "Aluminium Doors & Windows").reduce((s, d) => s + d.basicOrderValue, 0);
   const upvcVal = data.filter(d => d.product === "UPVC Windows").reduce((s, d) => s + d.basicOrderValue, 0);
-
+ 
   return (
     <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
       <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
@@ -242,7 +266,7 @@ function Dashboard({ data }) {
         </div>
         <div style={{ fontSize: 12, background: "#ECFDF5", color: "#065F46", padding: "4px 12px", borderRadius: 20, fontWeight: 600 }}>● Live Data</div>
       </div>
-
+ 
       {/* KPI Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
         <KpiCard label="Total Orders" value={data.length} icon="📦" color="#002060" />
@@ -255,7 +279,7 @@ function Dashboard({ data }) {
         <KpiCard label="Aluminium Qty" value={alumQty.toLocaleString()} icon="🔩" color="#8B5CF6" />
         <KpiCard label="UPVC Qty" value={upvcQty.toLocaleString()} icon="🏠" color="#06B6D4" />
       </div>
-
+ 
       {/* Charts Row */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
         {/* Monthly Trend */}
@@ -269,7 +293,7 @@ function Dashboard({ data }) {
           <HBarChart data={zoneData} xKey="zone" yKey="value" color="#6366F1" height={160} />
         </div>
       </div>
-
+ 
       {/* Product Split + Status */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
         <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
@@ -302,7 +326,7 @@ function Dashboard({ data }) {
     </div>
   );
 }
-
+ 
 // ─── Simple Bar Chart (SVG) ───
 function BarChart({ data, xKey, yKey, color, height = 160 }) {
   if (!data.length) return null;
@@ -323,7 +347,7 @@ function BarChart({ data, xKey, yKey, color, height = 160 }) {
     </svg>
   );
 }
-
+ 
 function HBarChart({ data, xKey, yKey, color, height = 160 }) {
   if (!data.length) return null;
   const maxVal = Math.max(...data.map(d => d[yKey]));
@@ -344,7 +368,7 @@ function HBarChart({ data, xKey, yKey, color, height = 160 }) {
     </svg>
   );
 }
-
+ 
 function DonutChart({ data }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   let startAngle = -Math.PI / 2;
@@ -378,7 +402,7 @@ function DonutChart({ data }) {
     </div>
   );
 }
-
+ 
 function StatusPie({ data }) {
   const statusColors = { Done: "#10B981", Survey: "#3B82F6", Production: "#8B5CF6", Dispatch: "#F59E0B", Installation: "#06B6D4", Pending: "#EF4444", "Quotation Sent": "#6B7280" };
   const counts = {};
@@ -404,13 +428,13 @@ function StatusPie({ data }) {
     </div>
   );
 }
-
+ 
 // ─── Order Management ───
 function OrderManagement({ data, search }) {
   const [sort, setSort] = useState({ key: "sno", dir: 1 });
   const [page, setPage] = useState(1);
   const PER_PAGE = 15;
-
+ 
   const filtered = useMemo(() => {
     let d = data;
     if (search) {
@@ -419,13 +443,13 @@ function OrderManagement({ data, search }) {
     }
     return d.sort((a, b) => (a[sort.key] > b[sort.key] ? 1 : -1) * sort.dir);
   }, [data, search, sort]);
-
+ 
   const pages = Math.ceil(filtered.length / PER_PAGE);
   const rows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const statusColors = { Done: { bg: "#ECFDF5", text: "#065F46" }, Survey: { bg: "#EFF6FF", text: "#1D4ED8" }, Production: { bg: "#F5F3FF", text: "#5B21B6" }, Dispatch: { bg: "#FFFBEB", text: "#92400E" }, Installation: { bg: "#E0F2FE", text: "#0C4A6E" }, Pending: { bg: "#FEF2F2", text: "#991B1B" } };
-
+ 
   const thStyle = (k) => ({ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, textAlign: "left", cursor: "pointer", whiteSpace: "nowrap", background: "#F8FAFF", borderBottom: "1px solid #E5E7EB" });
-
+ 
   return (
     <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -481,7 +505,7 @@ function OrderManagement({ data, search }) {
     </div>
   );
 }
-
+ 
 // ─── Sales Funnel ───
 function SalesFunnel({ data }) {
   const stages = [
@@ -529,24 +553,24 @@ function SalesFunnel({ data }) {
     </div>
   );
 }
-
+ 
 // ─── Analytics ───
 function Analytics({ data }) {
   const zones = [...new Set(data.map(d => d.zone))];
   const salesPersons = [...new Set(data.map(d => d.salesPerson))];
-
+ 
   const zoneAnalytics = zones.map(z => {
     const zd = data.filter(d => d.zone === z);
     const done = zd.filter(d => d.status === "Done");
     return { zone: z, orders: zd.length, done: done.length, value: zd.reduce((s, d) => s + d.basicOrderValue, 0), qty: zd.reduce((s, d) => s + d.totalQty, 0) };
   });
-
+ 
   const spAnalytics = salesPersons.map(sp => {
     const spd = data.filter(d => d.salesPerson === sp);
     const done = spd.filter(d => d.status === "Done");
     return { sp, orders: spd.length, done: done.length, value: spd.reduce((s, d) => s + d.basicOrderValue, 0) };
   }).sort((a, b) => b.value - a.value);
-
+ 
   return (
     <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
@@ -622,7 +646,7 @@ function Analytics({ data }) {
     </div>
   );
 }
-
+ 
 // ─── Partners ───
 function Partners({ data }) {
   const partners = [...new Set(data.map(d => d.partner))];
@@ -634,7 +658,7 @@ function Partners({ data }) {
     const zones = [...new Set(pd.map(d => d.zone))];
     return { partner: p, orders: pd.length, done: done.length, pending: pd.length - done.length, value: val, qty, convRate: pct(done.length, pd.length), zones: zones.join(", ") };
   }).sort((a, b) => b.value - a.value);
-
+ 
   return (
     <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 20 }}>
@@ -678,7 +702,7 @@ function Partners({ data }) {
     </div>
   );
 }
-
+ 
 // ─── Payment Tracker ───
 function PaymentTracker({ data }) {
   const totalVal = data.reduce((s, d) => s + d.basicOrderValue, 0);
@@ -687,7 +711,7 @@ function PaymentTracker({ data }) {
   const despatchVal = data.reduce((s, d) => s + d.basicOrderValue * (d.despatchPercent / 100), 0);
   const collected = data.filter(d => d.status === "Done").reduce((s, d) => s + d.basicOrderValue, 0);
   const outstanding = totalVal - collected;
-
+ 
   return (
     <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
@@ -698,7 +722,7 @@ function PaymentTracker({ data }) {
         <KpiCard label="Collected" value={fmt(collected)} icon="✅" color="#10B981" />
         <KpiCard label="Outstanding" value={fmt(outstanding)} icon="⚠️" color="#EF4444" />
       </div>
-
+ 
       <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px", marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 12 }}>Collection Progress</div>
         {[{ label: "Advance Collected", val: advanceVal, max: advanceVal, color: "#0EA5E9" },
@@ -717,7 +741,7 @@ function PaymentTracker({ data }) {
           </div>
         ))}
       </div>
-
+ 
       {/* Payment Stage Table */}
       <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: "12px 16px", borderBottom: "1px solid #F3F4F6", fontSize: 13, fontWeight: 700, color: OZONE_NAVY }}>Order Payment Status</div>
@@ -752,7 +776,7 @@ function PaymentTracker({ data }) {
     </div>
   );
 }
-
+ 
 // ─── Order Punch ───
 function OrderPunch({ onSubmit }) {
   const [form, setForm] = useState({
@@ -778,13 +802,13 @@ function OrderPunch({ onSubmit }) {
       )}
     </div>
   );
-
+ 
   const handleSubmit = () => {
     if (!form.customer || !form.basicOrderValue) { alert("Please fill in Customer Name and Basic Order Value."); return; }
     setSubmitted(true);
     setTimeout(() => { setSubmitted(false); onSubmit && onSubmit(form); }, 2000);
   };
-
+ 
   return (
     <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
       {submitted && (
@@ -847,14 +871,14 @@ function OrderPunch({ onSubmit }) {
     </div>
   );
 }
-
+ 
 // ─── Settings ───
 function Settings({ user }) {
   const [tab, setTab] = useState("datasource");
   const [sheetUrl, setSheetUrl] = useState("");
   const [connected, setConnected] = useState(false);
   const tabs = [["datasource", "Data Source"], ["columns", "Column Mapping"], ["kpis", "KPI Config"], ["users", "User Management"], ["filters", "Filter Config"]];
-
+ 
   return (
     <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid #E5E7EB", paddingBottom: 0 }}>
@@ -864,7 +888,7 @@ function Settings({ user }) {
           </button>
         ))}
       </div>
-
+ 
       {tab === "datasource" && (
         <div style={{ maxWidth: 600 }}>
           <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px" }}>
@@ -887,7 +911,7 @@ function Settings({ user }) {
           </div>
         </div>
       )}
-
+ 
       {tab === "columns" && (
         <div>
           <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 14 }}>All 94 columns from the connected spreadsheet — mapped to platform modules.</div>
@@ -929,7 +953,7 @@ function Settings({ user }) {
           </div>
         </div>
       )}
-
+ 
       {tab === "users" && (
         <div style={{ maxWidth: 600 }}>
           <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px" }}>
@@ -947,7 +971,7 @@ function Settings({ user }) {
           </div>
         </div>
       )}
-
+ 
       {(tab === "kpis" || tab === "filters") && (
         <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: OZONE_NAVY, marginBottom: 8 }}>{tab === "kpis" ? "KPI Configuration" : "Filter Configuration"}</div>
@@ -964,15 +988,15 @@ function Settings({ user }) {
     </div>
   );
 }
-
+ 
 // ─── Main App ───
-export default function App() {
+function App() {
   const [user, setUser] = useState(null);
   const [page, setPage] = useState("dashboard");
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [filters, setFilters] = useState({ zone: "All", product: "All", status: "All", month: "All" });
-
+ 
   const filteredData = useMemo(() => {
     let d = ALL_DATA;
     if (filters.zone !== "All") d = d.filter(r => r.zone === filters.zone);
@@ -981,9 +1005,9 @@ export default function App() {
     if (filters.month !== "All") d = d.filter(r => r.month === filters.month);
     return d;
   }, [filters]);
-
+ 
   if (!user) return <LoginScreen onLogin={setUser} />;
-
+ 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "system-ui,-apple-system,sans-serif", background: "#F9FAFB", overflow: "hidden" }}>
       <Sidebar active={page} onNav={setPage} user={user} onLogout={() => setUser(null)} collapsed={collapsed} setCollapsed={setCollapsed} />
@@ -1002,3 +1026,10 @@ export default function App() {
     </div>
   );
 }
+ 
+ 
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
