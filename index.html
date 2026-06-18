@@ -128,22 +128,35 @@ a { color: #2563eb; text-decoration: none; }
 .ds-demo { background: #fef9c3; color: #854d0e; }
 
 /* ━━━ FILTER BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.filter-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; }
-.filter-sel { padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 5px; background: #f8fafc; color: #1a1f36; cursor: pointer; font-size: 12px; }
+.filter-label { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 4px; }
+.filter-groups { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 3px; }
+.filter-group-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.filter-sel { padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #1a1f36; cursor: pointer; font-size: 12px; min-width: 110px; }
 .filter-sel:focus { border-color: #2563eb; outline: none; }
-.btn-ghost { padding: 5px 10px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; color: #64748b; font-size: 12px; }
+.btn-ghost { padding: 5px 10px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #64748b; font-size: 12px; align-self: flex-end; }
 .btn-ghost:hover { background: #f1f5f9; }
+.filter-clear-btn { margin-bottom: 1px; }
+.filter-active { background: #fff1f2 !important; border-color: #fecaca !important; color: #dc2626 !important; font-weight: 600; }
+/* Export button */
+.export-menu { position: relative; display: inline-block; }
+.export-btn-main { padding: 6px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px; color: #374151; display: flex; align-items: center; gap: 5px; }
+.export-btn-main:hover { background: #f8fafc; }
+.export-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 100; min-width: 140px; overflow: hidden; }
+.export-menu:hover .export-dropdown, .export-menu.open .export-dropdown { display: block; }
+.export-option { display: block; width: 100%; padding: 9px 14px; text-align: left; border: none; background: transparent; font-size: 12px; color: #374151; cursor: pointer; }
+.export-option:hover { background: #f8fafc; }
 
 /* ━━━ KPI CARDS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 12px; margin-bottom: 20px; }
-.kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 16px; border-left: 3px solid #e2e8f0; }
+.kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 16px; border-left: 3px solid #e2e8f0; overflow: hidden; min-width: 0; }
 .kpi-card.blue  { border-left-color: #2563eb; }
 .kpi-card.green { border-left-color: #16a34a; }
 .kpi-card.amber { border-left-color: #d97706; }
 .kpi-card.red   { border-left-color: #dc2626; }
 .kpi-card.purple{ border-left-color: #7c3aed; }
 .kpi-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
-.kpi-value { font-size: 22px; font-weight: 700; color: #1a1f36; line-height: 1; }
+.kpi-value { font-size: 18px; font-weight: 700; color: #1a1f36; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .kpi-sub   { font-size: 11px; color: #94a3b8; margin-top: 3px; }
 
 /* ━━━ PANELS / CARDS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -555,7 +568,13 @@ function filtered() {
 /* ═══════════════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════════════ */
-const fmtL = n => { const v = parseFloat(n)||0; return v===0 ? '—' : '₹'+v.toFixed(2)+'L'; };
+const fmtL = n => {
+  const v = parseFloat(n)||0;
+  if(v===0) return '—';
+  if(v>=100)  return '₹'+Math.round(v)+'L';      // large: no decimals
+  if(v>=10)   return '₹'+v.toFixed(1)+'L';       // medium: 1 decimal
+  return '₹'+v.toFixed(2)+'L';                   // small: 2 decimals
+};
 const fmtN = n => (parseFloat(n)||0).toLocaleString('en-IN');
 const pct  = (a,b) => b===0 ? 0 : Math.round(a/b*100);
 const sum  = (arr,k) => arr.reduce((s,r) => s+(parseFloat(r[k])||0), 0);
@@ -619,7 +638,7 @@ function parseCSV(txt) {
 const COL_RX = {
   sno:/^s\.?no|^serial/i, zm:/^zm$|^zonal\s*(mgr|manager)/i, rsm:/^rsm$/i,
   month:/^month$/i, quarter:/^q(tr|uarter)/i, year:/^year$/i, status:/^status$/i,
-  product:/^product\s*1?$|^product\s*cat/i, zone:/^zone$/i,
+  product:/^product\s*1?$|^product\s*cat|^product\s*type/i, zone:/^zone$/i,
   salesPerson:/^sales\s*(person|exec)|^se$/i, partner:/^ozo\s*blu|^partner\s*name/i,
   customer:/^customer\s*name|^ship\s*to/i, totalQty:/^total\s*qty/i,
   basicOrderValue:/^basic\s*order\s*value/i, totalOrderValue:/^total\s*order\s*value/i,
@@ -633,6 +652,7 @@ function autoMap(hdrs) {
 }
 function rowToRec(cells, map, idx) {
   const g=(f,def='')=>{const i=map[f];return i!==undefined&&cells[i]!==undefined?String(cells[i]).trim():def;};
+  // Read raw value — conversion to Lakhs happens after all rows loaded
   const bv=parseFloat(g('basicOrderValue','0'))||0;
   const r={}; SCH.forEach(s=>r[s.k]='');
   Object.assign(r,{sno:parseInt(g('sno',idx))||idx,zm:g('zm'),rsm:g('rsm'),month:g('month'),
@@ -659,10 +679,28 @@ function fetchGViz(id, tab) {
         if(!d||!d.table) return rej(new Error('No table returned. Check sharing settings.'));
         const cols=(d.table.cols||[]).map(c=>c.label||c.id||'');
         const map=autoMap(cols);
-        const recs=(d.table.rows||[]).map((row,i)=>{
+        const allRecs=(d.table.rows||[]).map((row,i)=>{
           const cells=(row.c||[]).map(c=>c&&c.v!=null?String(c.v):'');
           return rowToRec(cells,map,i+1);
         });
+        // Filter out empty/invalid rows
+        const recs=allRecs.filter(r=>
+          (r.sno&&r.sno>0) ||
+          (r.customer&&r.customer.trim()) ||
+          (r.quotationNo&&r.quotationNo.trim()) ||
+          (r.basicOrderValue&&parseFloat(r.basicOrderValue)>0)
+        );
+        // Auto-detect scale: if avg basicOrderValue > 1000, values are in rupees not lakhs
+        // Convert to Lakhs for consistent display
+        const validVals=recs.map(r=>parseFloat(r.basicOrderValue)||0).filter(v=>v>0);
+        const avgVal=validVals.length?validVals.reduce((a,b)=>a+b,0)/validVals.length:0;
+        if(avgVal>1000){
+          recs.forEach(r=>{
+            r.basicOrderValue=+(parseFloat(r.basicOrderValue||0)/100000).toFixed(2);
+            r.basicOVL=r.basicOrderValue;
+            r.totalOrderValue=+(parseFloat(r.totalOrderValue||0)/100000).toFixed(2);
+          });
+        }
         res({recs,map,hdrs:cols});
       } catch(e){rej(new Error('Parse error: '+e.message));}
     };
@@ -681,7 +719,23 @@ function fetchGAS(deployId, id, tab) {
       cleanup();
       if(d.error) return rej(new Error('GAS: '+d.error));
       const map=autoMap(d.headers||[]);
-      const recs=(d.rows||[]).map((row,i)=>rowToRec(row,map,i+1));
+      const allRecs=(d.rows||[]).map((row,i)=>rowToRec(row,map,i+1));
+      const recs=allRecs.filter(r=>
+        (r.sno&&r.sno>0) ||
+        (r.customer&&r.customer.trim()) ||
+        (r.quotationNo&&r.quotationNo.trim()) ||
+        (r.basicOrderValue&&parseFloat(r.basicOrderValue)>0)
+      );
+      // Auto-detect scale: if avg > 1000 → rupees, convert to lakhs
+      const validVals=recs.map(r=>parseFloat(r.basicOrderValue)||0).filter(v=>v>0);
+      const avgVal=validVals.length?validVals.reduce((a,b)=>a+b,0)/validVals.length:0;
+      if(avgVal>1000){
+        recs.forEach(r=>{
+          r.basicOrderValue=+(parseFloat(r.basicOrderValue||0)/100000).toFixed(2);
+          r.basicOVL=r.basicOrderValue;
+          r.totalOrderValue=+(parseFloat(r.totalOrderValue||0)/100000).toFixed(2);
+        });
+      }
       res({recs,map,hdrs:d.headers||[]});
     };
     sc.onerror=()=>{cleanup();rej(new Error('GAS script failed.'));};
@@ -704,6 +758,108 @@ async function doConnect() {
   }
 }
 setInterval(()=>{ if(S.connected) doConnect(); },5*60*1000);
+
+/* ═══════════════════════════════════════════════════════
+   EXPORT UTILITIES
+═══════════════════════════════════════════════════════ */
+function escapeCSV(v) {
+  var s = String(v == null ? '' : v);
+  if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+function toCSV(headers, rows) {
+  var lines = [headers.map(escapeCSV).join(',')];
+  for (var i = 0; i < rows.length; i++) {
+    lines.push(rows[i].map(escapeCSV).join(','));
+  }
+  return lines.join('\r\n');
+}
+function downloadCSV(filename, headers, rows) {
+  var csv = toCSV(headers, rows);
+  var blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename + '.csv'; a.click();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+function downloadExcel(filename, headers, rows) {
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  var th = headers.map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('');
+  var tb = rows.map(function(r){
+    return '<tr>' + r.map(function(v){ return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>';
+  }).join('');
+  var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office"'
+    + ' xmlns:x="urn:schemas-microsoft-com:office:excel">'
+    + '<head><meta charset="UTF-8"><style>'
+    + 'body{font-family:Arial,sans-serif;font-size:11px}'
+    + 'th{background:#1e3a5f;color:#fff;border:1px solid #999;padding:5px;font-weight:bold}'
+    + 'td{border:1px solid #ccc;padding:4px}'
+    + '</style></head><body>'
+    + '<table><thead><tr>' + th + '</tr></thead><tbody>' + tb + '</tbody></table>'
+    + '</body></html>';
+  var blob = new Blob([html], {type: 'application/vnd.ms-excel;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename + '.xls'; a.click();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+function exportPrint(filename, headers, rows) {
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  var th = headers.map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('');
+  var tb = rows.map(function(r){
+    return '<tr>' + r.map(function(v){ return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>';
+  }).join('');
+  var win = window.open('', '_blank');
+  win.document.write(
+    '<html><head><title>' + esc(filename) + '</title>'
+    + '<style>'
+    + 'body{font-family:Arial,sans-serif;font-size:11px;margin:20px}'
+    + 'h2{color:#1e3a5f;margin-bottom:6px}'
+    + '.meta{color:#666;font-size:10px;margin-bottom:14px}'
+    + 'table{border-collapse:collapse;width:100%}'
+    + 'th{background:#1e3a5f;color:#fff;padding:6px 8px;text-align:left;font-size:11px}'
+    + 'td{padding:5px 8px;border-bottom:1px solid #eee;font-size:11px}'
+    + 'tr:nth-child(even){background:#f8f8f8}'
+    + '@media print{body{margin:0}}'
+    + '</style></head><body>'
+    + '<h2>' + esc(filename) + '</h2>'
+    + '<div class="meta">Generated: ' + new Date().toLocaleString('en-IN') + ' &nbsp;|&nbsp; ' + rows.length + ' records</div>'
+    + '<table><thead><tr>' + th + '</tr></thead><tbody>' + tb + '</tbody></table>'
+    + '</body></html>'
+  );
+  win.document.close();
+  setTimeout(function(){ win.print(); }, 400);
+}
+function ExportMenu(filename, getRows) {
+  var menu = el('div',{cls:'export-menu'},
+    el('button',{cls:'export-btn-main', onclick: function(e){
+      e.stopPropagation();
+      menu.classList.toggle('open');
+    }}, '\u2B07 Export \u25BE'),
+    el('div',{cls:'export-dropdown'},
+      el('button',{cls:'export-option', onclick: function(){
+        var d = getRows(); downloadCSV(filename, d.h, d.r); menu.classList.remove('open');
+      }}, '\uD83D\uDCC4 Download CSV'),
+      el('button',{cls:'export-option', onclick: function(){
+        var d = getRows(); downloadExcel(filename, d.h, d.r); menu.classList.remove('open');
+      }}, '\uD83D\uDCCA Download Excel (.xls)'),
+      el('button',{cls:'export-option', onclick: function(){
+        var d = getRows(); exportPrint(filename, d.h, d.r); menu.classList.remove('open');
+      }}, '\uD83D\uDDA8 Print / Save as PDF')
+    )
+  );
+  // Close dropdown when clicking elsewhere
+  document.addEventListener('click', function(){ menu.classList.remove('open'); }, {once:false});
+  return menu;
+}
 
 /* ═══════════════════════════════════════════════════════
    LOGIN
@@ -823,21 +979,35 @@ function renderTopbar() {
    FILTERBAR
 ═══════════════════════════════════════════════════════ */
 function renderFilters() {
-  function mkSel(field, opts) {
-    const s = el('select',{cls:'filter-sel',onchange:e=>{const f={...S.filters};f[field]=e.target.value;set({filters:f,ordPage:1});}},
-      ...opts.map(o=>{const opt=el('option',{value:o},o);if(S.filters[field]===o)opt.selected=true;return opt;})
+  // Labelled filter group: label + select together
+  function mkGroup(label, field, opts) {
+    const s = el('select',{cls:'filter-sel',onchange:e=>{
+      const f={...S.filters};f[field]=e.target.value;set({filters:f,ordPage:1});
+    }}, ...opts.map(o=>{
+      const opt=el('option',{value:o},o==='All'?'All '+label:o);
+      if(S.filters[field]===o)opt.selected=true;
+      return opt;
+    }));
+    return el('div',{cls:'filter-group'},
+      el('label',{cls:'filter-group-label'},label),
+      s
     );
-    return s;
   }
   const fc = S.filterConfig;
   const items = [];
-  items.push(el('span',{cls:'filter-label'},'Filter:'));
-  if(fc.zone)    items.push(mkSel('zone',    ['All',...S.masterZones]));
-  if(fc.product) items.push(mkSel('product', ['All',...S.masterProducts]));
-  if(fc.status)  items.push(mkSel('status',  ['All',...S.masterStatuses]));
-  if(fc.month)   items.push(mkSel('month',   ['All',...MONTHS]));
-  items.push(el('button',{cls:'btn-ghost',onclick:()=>set({filters:{zone:'All',product:'All',status:'All',month:'All'},ordPage:1})},'Clear'));
-  return el('div',{id:'filterbar'},...items);
+  if(fc.zone)    items.push(mkGroup('Zone',    'zone',    ['All',...S.masterZones]));
+  if(fc.product) items.push(mkGroup('Product', 'product', ['All',...S.masterProducts]));
+  if(fc.status)  items.push(mkGroup('Status',  'status',  ['All',...S.masterStatuses]));
+  if(fc.month)   items.push(mkGroup('Month',   'month',   ['All',...MONTHS]));
+  const isActive = Object.values(S.filters).some(v=>v!=='All');
+  items.push(el('button',{
+    cls:'btn-ghost filter-clear-btn'+(isActive?' filter-active':''),
+    onclick:()=>set({filters:{zone:'All',product:'All',status:'All',month:'All'},ordPage:1})
+  }, isActive?'✕ Clear Filters':'Clear'));
+  return el('div',{id:'filterbar'},
+    el('span',{cls:'filter-label'},'Filters:'),
+    el('div',{cls:'filter-groups'},...items)
+  );
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -851,8 +1021,13 @@ function renderDashboard() {
   const doneVal  = sum(done,'basicOrderValue');
   const pendVal  = sum(pend,'basicOrderValue');
   const totalQty = sum(data,'totalQty');
-  const alumQty  = sum(data.filter(r=>r.product===PRODUCTS[0]),'totalQty');
-  const upvcQty  = sum(data.filter(r=>r.product===PRODUCTS[1]),'totalQty');
+  // Product matching: check masterProducts first, then partial match
+  const alumProd = S.masterProducts.find(p=>p.toLowerCase().includes('alum'))||'Aluminium Doors & Windows';
+  const upvcProd = S.masterProducts.find(p=>p.toLowerCase().includes('upvc'))||'UPVC Windows';
+  const isAlum = r => r.product && (r.product===alumProd || r.product.toLowerCase().includes('alum'));
+  const isUpvc = r => r.product && (r.product===upvcProd || r.product.toLowerCase().includes('upvc'));
+  const alumQty  = sum(data.filter(isAlum),'totalQty');
+  const upvcQty  = sum(data.filter(isUpvc),'totalQty');
 
   function kpi(label,val,sub,color) {
     return el('div',{cls:'kpi-card '+color},
@@ -904,17 +1079,34 @@ function renderDashboard() {
   const maxPV=topPart[0]?.[1]||1;
 
   return el('div',{id:'page-body'},
+    // Dashboard export
+    el('div',{style:{display:'flex',justifyContent:'flex-end',marginBottom:'12px'}},
+      ExportMenu('Dashboard_Summary_'+new Date().toISOString().slice(0,10), ()=>({
+        h:['Metric','Value','Notes'],
+        r:[
+          ['Total Orders',data.length,'All records'],
+          ['Total Window Qty',totalQty,'Units'],
+          ['Order Value (₹L)',totalVal.toFixed(2),'Basic value'],
+          ['Completed Orders',done.length,pct(done.length,data.length)+'% rate'],
+          ['Completed Value (₹L)',doneVal.toFixed(2),'Realised'],
+          ['Pending Orders',pend.length,pct(pend.length,data.length)+'% open'],
+          ['Pending Value (₹L)',pendVal.toFixed(2),'Pipeline'],
+          ['Aluminium Qty',alumQty,'Doors & Windows'],
+          ['UPVC Qty',upvcQty,'Windows'],
+        ]
+      }))
+    ),
     // KPI row — respects kpiConfig visibility settings
     el('div',{cls:'kpi-grid'},
       S.kpiConfig.totalOrders    ? kpi('Total Orders',     data.length,                                   null,                     'blue')   : null,
       S.kpiConfig.totalQty       ? kpi('Total Qty',        fmtN(totalQty),                                'Window units',           'blue')   : null,
       S.kpiConfig.orderValue     ? kpi('Order Value',      fmtL(totalVal),                                'Basic value',            'blue')   : null,
-      S.kpiConfig.completed      ? kpi('Completed',        done.length,                                   pct(done.length,data.length)+'% rate','green')  : null,
-      S.kpiConfig.completedValue ? kpi('Completed Value',  fmtL(doneVal),                                 'Realised',               'green')  : null,
-      S.kpiConfig.pending        ? kpi('Pending Orders',   pend.length,                                   pct(pend.length,data.length)+'% open','amber')  : null,
-      S.kpiConfig.pendingValue   ? kpi('Pending Value',    fmtL(pendVal),                                 'Pipeline',               'amber')  : null,
-      S.kpiConfig.alumQty        ? kpi('Aluminium Qty',    fmtN(alumQty),                                 'Doors & Windows',        'purple') : null,
-      S.kpiConfig.upvcQty        ? kpi('UPVC Qty',         fmtN(upvcQty),                                 'Windows',                'purple') : null,
+      S.kpiConfig.completed      ? kpi('Completed',        done.length,  pct(done.length,data.length)+'% · '+fmtL(doneVal), 'green')  : null,
+      S.kpiConfig.completedValue ? kpi('Completed Value',  fmtL(doneVal),  'Realised revenue',  'green')  : null,
+      S.kpiConfig.pending        ? kpi('Pending Orders',   pend.length,  pct(pend.length,data.length)+'% · '+fmtL(pendVal),  'amber')  : null,
+      S.kpiConfig.pendingValue   ? kpi('Pending Value',    fmtL(pendVal),  'Pipeline value',    'amber')  : null,
+      S.kpiConfig.alumQty        ? kpi('Aluminium Qty',    fmtN(alumQty),  alumProd,   'purple') : null,
+      S.kpiConfig.upvcQty        ? kpi('UPVC Qty',         fmtN(upvcQty),  upvcProd,   'purple') : null,
     ),
     // Row 1: chart + zone
     el('div',{cls:'grid-2'},
@@ -1004,8 +1196,14 @@ function renderOrders() {
 
   return el('div',{id:'page-body'},
     el('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'14px'}},
-      el('span',{cls:'muted'},data.length+' records'),
-      el('button',{cls:'btn btn-primary btn-sm',onclick:()=>set({page:'punch'})},'+ New Order')
+      el('span',{cls:'muted'},data.length+' records · Page '+pg+' of '+pages),
+      el('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
+        ExportMenu('Orders_'+new Date().toISOString().slice(0,10), ()=>({
+          h:['S.No','Date','Quotation No.','Customer','Partner','Product','Zone','Sales Person','Qty','Basic Value (₹L)','Total Value (₹L)','Status'],
+          r:data.map(r=>[r.sno,r.dateOfOrder,r.quotationNo,r.customer,r.partner,r.product,r.zone,r.salesPerson,r.totalQty,(parseFloat(r.basicOrderValue)||0).toFixed(2),(parseFloat(r.totalOrderValue)||0).toFixed(2),r.status])
+        })),
+        el('button',{cls:'btn btn-primary btn-sm',onclick:()=>set({page:'punch'})},'+ New Order')
+      )
     ),
     el('div',{cls:'panel'},
       el('div',{cls:'tbl-wrap'},
@@ -1206,7 +1404,13 @@ function renderAnalytics() {
   return el('div',{id:'page-body'},
     el('div',{cls:'grid-2'},
       el('div',{cls:'panel'},
-        el('div',{cls:'panel-header'},el('span',{cls:'panel-title'},'Zone Summary')),
+        el('div',{cls:'panel-header'},
+          el('span',{cls:'panel-title'},'Zone Summary'),
+          ExportMenu('Zone_Summary', ()=>({
+            h:['Zone','Orders','Done','Pending','Conv%','Value (₹L)'],
+            r:zRows.map(z=>[z.zone,z.orders,z.done,z.pend,pct(z.done,z.orders),z.val.toFixed(2)])
+          }))
+        ),
         el('div',{cls:'tbl-wrap'},
           el('table',{},
             el('thead',{},el('tr',{},el('th',{},'Zone'),el('th',{},'Orders'),el('th',{},'Done'),el('th',{},'Pending'),el('th',{},'Conv%'),el('th',{},'Value (₹L)'))),
@@ -1236,7 +1440,13 @@ function renderAnalytics() {
       )
     ),
     el('div',{cls:'panel'},
-      el('div',{cls:'panel-header'},el('span',{cls:'panel-title'},'Sales Person Performance')),
+      el('div',{cls:'panel-header'},
+        el('span',{cls:'panel-title'},'Sales Person Performance'),
+        ExportMenu('SalesPerson_Performance', ()=>({
+          h:['Rank','Sales Person','Orders','Done','Conv%','Value (₹L)'],
+          r:spRows.map((sp,i)=>[i+1,sp.sp,sp.orders,sp.done,pct(sp.done,sp.orders),sp.val.toFixed(2)])
+        }))
+      ),
       el('div',{cls:'panel-body'},
         ...spRows.slice(0,10).map((sp,i)=>
           el('div',{cls:'prog'},
@@ -1279,7 +1489,13 @@ function renderFunnel() {
     {label:'Completed (Done)',  fn:r=>r.status==='Done',                                        bg:'#16a34a'},
   ];
   return el('div',{id:'page-body'},
-    el('p',{cls:'section-hint'},'Cumulative order lifecycle from enquiry through completion.'),
+    el('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'14px'}},
+      el('p',{cls:'section-hint',style:{margin:0}},'Cumulative order lifecycle from enquiry through completion.'),
+      ExportMenu('Sales_Funnel', ()=>({
+        h:['Stage','Count','% of Total','Value (₹L)'],
+        r:stages.map(s=>{const m=data.filter(s.fn);return[s.label,m.length,pct(m.length,data.length||1)+'%',sum(m,'basicOrderValue').toFixed(2)];})
+      }))
+    ),
     el('div',{cls:'funnel-wrap'},
       ...stages.flatMap((stage,i)=>{
         const matched=data.filter(stage.fn);
@@ -1319,7 +1535,16 @@ function renderPartners() {
       ]).map(([l,v,s,c])=>el('div',{cls:'kpi-card '+c},el('div',{cls:'kpi-label'},l),el('div',{cls:'kpi-value'},String(v))))
     ),
     el('div',{cls:'panel'},
-      el('div',{cls:'panel-header'},el('span',{cls:'panel-title'},'Partner Performance'),el('span',{cls:'panel-meta'},rows.length+' partners')),
+      el('div',{cls:'panel-header'},
+        el('span',{cls:'panel-title'},'Partner Performance'),
+        el('div',{style:{display:'flex',alignItems:'center',gap:'10px'}},
+          el('span',{cls:'panel-meta'},rows.length+' partners'),
+          ExportMenu('Partner_Performance', ()=>({
+            h:['#','Partner','Zones','Orders','Done','Pending','Conv%','Total Qty','Value (₹L)'],
+            r:rows.map((r,i)=>[i+1,r.p,r.zones,r.orders,r.done,r.pend,r.conv+'%',fmtN(r.qty),r.val.toFixed(2)])
+          }))
+        )
+      ),
       el('div',{cls:'tbl-wrap'},
         el('table',{},
           el('thead',{},el('tr',{},
@@ -1388,7 +1613,18 @@ function renderPayments() {
       )
     ),
     el('div',{cls:'panel'},
-      el('div',{cls:'panel-header'},el('span',{cls:'panel-title'},'Order Payment Details')),
+      el('div',{cls:'panel-header'},
+        el('span',{cls:'panel-title'},'Order Payment Details'),
+        ExportMenu('Payment_Details', ()=>({
+          h:['Quotation No.','Customer','Partner','Basic Value','Advance','Survey','Despatch','Status'],
+          r:data.map(r=>[r.quotationNo,r.customer,r.partner,
+            (parseFloat(r.basicOrderValue)||0).toFixed(2),
+            ((parseFloat(r.basicOrderValue)||0)*advPct).toFixed(2),
+            ((parseFloat(r.basicOrderValue)||0)*survPct).toFixed(2),
+            ((parseFloat(r.basicOrderValue)||0)*despPct).toFixed(2),
+            r.status])
+        }))
+      ),
       el('div',{cls:'tbl-wrap'},
         el('table',{},
           el('thead',{},el('tr',{},el('th',{},'Quotation No.'),el('th',{},'Customer'),el('th',{},'Partner'),el('th',{},'Basic Value'),el('th',{},'Advance'),el('th',{},'Survey'),el('th',{},'Despatch'),el('th',{},'Status'))),
