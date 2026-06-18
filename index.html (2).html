@@ -138,7 +138,7 @@ const SALESPERSONS=["Ankit Sharma","Deepa Nair","Rohit Verma","Kavita Joshi","Su
 const STATUSES=["Done","Done","Done","Survey","Production","Dispatch","Installation","Pending","Quotation Sent"];
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const CUSTOMERS=["Prestige Builders","Sobha Developers","DLF Homes","Godrej Properties","Puravankara Projects","Brigade Group","Mahindra Lifespace","Tata Housing","Lodha Group","Shapoorji Pallonji"];
- 
+
 function seed(i){let x=Math.sin(i+1)*10000;return x-Math.floor(x);}
 const ALL_DATA=Array.from({length:120},(_,i)=>{
   const zone=ZONES[i%5];
@@ -157,12 +157,12 @@ const ALL_DATA=Array.from({length:120},(_,i)=>{
     advPct:30,survPct:20,despPct:50,location:"City-"+((i%10)+1),
     category:prod==="Aluminium Doors & Windows"?"Premium":"Standard"};
 });
- 
+
 // ── HELPERS ───────────────────────────────────────────────────────────────
 const fmt=n=>n>=1?"₹"+n.toFixed(1)+"L":"₹"+(n*100).toFixed(0)+"K";
 const pct=(a,b)=>b===0?0:Math.round(a/b*100);
 const uniq=(arr,k)=>[...new Set(arr.map(r=>r[k]))];
- 
+
 // ── STATE ─────────────────────────────────────────────────────────────────
 let STATE={
   user:null,page:"dashboard",collapsed:false,
@@ -174,7 +174,7 @@ let STATE={
   formData:{}
 };
 function setState(patch){Object.assign(STATE,patch);render();}
- 
+
 function filteredData(){
   let d=ALL_DATA;
   const f=STATE.filters;
@@ -190,7 +190,7 @@ function filteredData(){
   }
   return d;
 }
- 
+
 // ── RENDER ENGINE ─────────────────────────────────────────────────────────
 function h(tag,attrs,...children){
   const el=document.createElement(tag);
@@ -206,7 +206,7 @@ function h(tag,attrs,...children){
   });
   return el;
 }
- 
+
 // ── LOGIN ─────────────────────────────────────────────────────────────────
 function renderLogin(){
   let user="",pass="",errEl=h("div",{class:"err-msg",style:{display:"none"}},"");
@@ -241,7 +241,7 @@ function renderLogin(){
     )
   );
 }
- 
+
 // ── SIDEBAR ───────────────────────────────────────────────────────────────
 const NAV=[
   {id:"dashboard",icon:"⊞",label:"Executive Dashboard"},
@@ -254,7 +254,7 @@ const NAV=[
   {id:"settings",icon:"⚙",label:"Settings & Admin"},
 ];
 const TITLES={dashboard:"Executive Dashboard",orders:"Order Management",funnel:"Sales Funnel",analytics:"Analytics",partners:"Partner Performance",payments:"Payment Tracker",punch:"New Order",settings:"Settings & Admin"};
- 
+
 function renderSidebar(){
   const c=STATE.collapsed;
   const items=NAV.map(n=>{
@@ -278,7 +278,7 @@ function renderSidebar(){
     footer
   );
 }
- 
+
 // ── TOPBAR ────────────────────────────────────────────────────────────────
 function renderTopbar(){
   const si=h("input",{type:"text",placeholder:"Search orders, partners, customers…",value:STATE.search,style:{width:"100%",padding:"8px 10px 8px 30px",border:"1.5px solid #E5E7EB",borderRadius:"8px",fontSize:"13px"}});
@@ -293,7 +293,7 @@ function renderTopbar(){
     h("span",{style:{fontSize:"12px",color:"#6B7280"}},STATE.user.role)
   );
 }
- 
+
 // ── FILTERBAR ─────────────────────────────────────────────────────────────
 function renderFilterbar(){
   function sel(field,opts){
@@ -311,7 +311,7 @@ function renderFilterbar(){
     h("button",{class:"clear-btn",onclick:()=>setState({filters:{zone:"All",product:"All",status:"All",month:"All"},orderPage:1})},"✕ Clear")
   );
 }
- 
+
 // ── SVG BAR CHART ─────────────────────────────────────────────────────────
 function svgBar(data,xKey,yKey,color){
   if(!data.length) return h("div",{},"No data");
@@ -339,7 +339,7 @@ function svgBar(data,xKey,yKey,color){
   });
   return svg;
 }
- 
+
 function svgHBar(data,xKey,yKey,color){
   if(!data.length) return h("div",{},"No data");
   const ns="http://www.w3.org/2000/svg";
@@ -369,7 +369,7 @@ function svgHBar(data,xKey,yKey,color){
   });
   return svg;
 }
- 
+
 // ── DONUT CHART ───────────────────────────────────────────────────────────
 function donutChart(segments){
   const total=segments.reduce((s,d)=>s+(d.value||0),0)||1;
@@ -399,7 +399,7 @@ function donutChart(segments){
   svg.appendChild(pctTxt);
   return svg;
 }
- 
+
 // ── DASHBOARD ─────────────────────────────────────────────────────────────
 function renderDashboard(){
   const data=filteredData();
@@ -411,7 +411,7 @@ function renderDashboard(){
   const totalQty=data.reduce((s,d)=>s+d.totalQty,0);
   const alumQty=data.filter(d=>d.product===PRODUCTS[0]).reduce((s,d)=>s+d.totalQty,0);
   const upvcQty=data.filter(d=>d.product===PRODUCTS[1]).reduce((s,d)=>s+d.totalQty,0);
- 
+
   function kpi(label,value,icon,sub){
     return h("div",{class:"kpi-card"},
       h("div",{class:"kpi-label"},label),
@@ -421,7 +421,7 @@ function renderDashboard(){
       )
     );
   }
- 
+
   // monthly
   const mdata=MONTHS.map(m=>{const md=data.filter(d=>d.month===m);return{month:m,value:md.reduce((s,d)=>s+d.basicOrderValue,0)};}).filter(m=>m.value>0);
   // zone
@@ -437,7 +437,7 @@ function renderDashboard(){
   const partnerMap={};data.forEach(d=>{partnerMap[d.partner]=(partnerMap[d.partner]||0)+d.basicOrderValue;});
   const topPartners=Object.entries(partnerMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxPV=topPartners[0]?.[1]||1;
- 
+
   return h("div",{class:"page"},
     h("div",{style:{display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px"}},
       h("div",{style:{flex:"1",fontSize:"13px",color:"#6B7280"}},"Business overview · "+data.length+" active records"),
@@ -505,7 +505,7 @@ function renderDashboard(){
     )
   );
 }
- 
+
 // ── ORDER MANAGEMENT ──────────────────────────────────────────────────────
 function renderOrders(){
   const data=filteredData();
@@ -556,7 +556,7 @@ function renderOrders(){
     )
   );
 }
- 
+
 // ── FUNNEL ────────────────────────────────────────────────────────────────
 function renderFunnel(){
   const data=filteredData();
@@ -596,7 +596,7 @@ function renderFunnel(){
     )
   );
 }
- 
+
 // ── ANALYTICS ────────────────────────────────────────────────────────────
 function renderAnalytics(){
   const data=filteredData();
@@ -664,7 +664,7 @@ function renderAnalytics(){
     )
   );
 }
- 
+
 // ── PARTNERS ─────────────────────────────────────────────────────────────
 function renderPartners(){
   const data=filteredData();
@@ -713,7 +713,7 @@ function renderPartners(){
     )
   );
 }
- 
+
 // ── PAYMENTS ─────────────────────────────────────────────────────────────
 function renderPayments(){
   const data=filteredData();
@@ -766,7 +766,7 @@ function renderPayments(){
     )
   );
 }
- 
+
 // ── ORDER PUNCH ───────────────────────────────────────────────────────────
 function renderPunch(){
   const F=STATE.formData;
@@ -836,7 +836,7 @@ function renderPunch(){
     )
   );
 }
- 
+
 // ── SETTINGS ─────────────────────────────────────────────────────────────
 function renderSettings(){
   const t=STATE.settingsTab;
@@ -933,7 +933,7 @@ function renderSettings(){
     content
   );
 }
- 
+
 // ── MAIN RENDER ───────────────────────────────────────────────────────────
 function render(){
   const root=document.getElementById("app");
@@ -952,7 +952,7 @@ function render(){
     )
   );
 }
- 
+
 render();
 </script>
 </body>
