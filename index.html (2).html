@@ -1,994 +1,1032 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ozone Order Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#002060;--navy2:#19315D;--gold:#FFC000;--gold2:#E6A800;
+  --blue:#378ADD;--blue-l:#E6F1FB;--bg:#f0f2f5;--white:#fff;
+  --gray1:#f8f9fa;--gray2:#e9ecef;--gray3:#dee2e6;--gray4:#adb5bd;
+  --text1:#1a1a2e;--text2:#495057;--text3:#6c757d;
+  --green:#2e7d32;--red:#c62828;--amber:#e65100;--purple:#7b1fa2;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text1);font-size:13px}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:#c5cae9;border-radius:4px}
 
-// ─── OZONE BRAND COLORS ───────────────────────────────────────────────────────
-const OZ = {
-  navy: "#003087",
-  navyDark: "#001f5c",
-  navyLight: "#0a4db5",
-  cyan: "#00b4d8",
-  cyanLight: "#90e0ef",
-  silver: "#f0f4f8",
-  silverDark: "#dde5ef",
-  text: "#111827",
-  textMuted: "#6b7280",
-  textLight: "#9ca3af",
-  white: "#ffffff",
-  green: "#10b981",
-  amber: "#f59e0b",
-  red: "#ef4444",
-  surface: "#f8fafc",
+/* Layout */
+#app{display:flex;flex-direction:column;height:100vh}
+#topnav{display:flex;align-items:center;gap:10px;padding:0 16px;height:50px;background:var(--navy);flex-shrink:0}
+#body{display:flex;flex:1;overflow:hidden}
+#sidebar{width:200px;background:var(--white);border-right:1px solid var(--gray3);overflow-y:auto;flex-shrink:0}
+#main{flex:1;overflow-y:auto;padding:16px}
+
+/* Login */
+#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#001440,#002060,#0d3580);z-index:100}
+.login-card{background:var(--white);border-radius:16px;padding:32px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.login-card h2{text-align:center;color:var(--navy);font-size:15px;margin-bottom:4px}
+.login-card p{text-align:center;color:var(--text3);font-size:11px;margin-bottom:24px}
+
+/* Nav */
+.logo-svg{height:28px}
+.nav-title{color:rgba(255,255,255,.7);font-size:12px}
+.nav-sep{height:20px;width:1px;background:rgba(255,255,255,.2)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.role-badge{background:var(--gold);color:var(--navy);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+.user-btn{background:rgba(255,255,255,.2);color:white;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px}
+
+/* Sidebar nav */
+.sidebar-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray4);padding:10px 14px 4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;color:var(--text2);font-size:12px;border-left:2px solid transparent;margin:1px 6px;border-radius:6px}
+.nav-item:hover{background:var(--gray1);color:var(--navy)}
+.nav-item.active{background:var(--blue-l);color:var(--navy);border-left-color:var(--navy);font-weight:600}
+.nav-icon{font-size:14px;width:16px;text-align:center}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#4caf50;margin:16px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:.7}50%{opacity:1;transform:scale(1.2)}}
+
+/* Pages */
+.page{display:none;animation:fadeIn .25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page-title{font-size:17px;font-weight:700;color:var(--navy)}
+.page-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi-card{background:var(--white);border-radius:10px;padding:12px;border:1px solid var(--gray2);position:relative;overflow:hidden}
+.kpi-top{height:3px;position:absolute;top:0;left:0;right:0;border-radius:10px 10px 0 0}
+.kpi-icon{font-size:18px;margin-bottom:6px}
+.kpi-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.kpi-val{font-size:20px;font-weight:700;margin:2px 0}
+.kpi-sub{font-size:10px;color:var(--text3)}
+.trend-up{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:var(--green);background:#e8f5e9;padding:2px 6px;border-radius:20px}
+.trend-down{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:var(--red);background:#ffebee;padding:2px 6px;border-radius:20px}
+.trend-neu{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:var(--amber);background:#fff3e0;padding:2px 6px;border-radius:20px}
+
+/* Charts */
+.chart-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+.chart-grid-3{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
+.chart-card{background:var(--white);border-radius:10px;padding:14px;border:1px solid var(--gray2)}
+.chart-title{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px}
+.chart-wrap{position:relative;width:100%}
+
+/* Tables */
+.table-card{background:var(--white);border-radius:10px;border:1px solid var(--gray2);overflow:hidden;margin-bottom:14px}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--gray2)}
+.table-header h3{font-size:12px;font-weight:700;color:var(--navy)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead th{background:var(--gray1);padding:7px 10px;text-align:left;font-weight:600;color:var(--text3);white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+tbody tr{border-bottom:1px solid #fafafa;cursor:pointer}
+tbody tr:hover{background:var(--blue-l)}
+tbody td{padding:7px 10px;color:var(--text2)}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.b-won{background:#e8f5e9;color:#1b5e20}.b-lost{background:#ffebee;color:#b71c1c}
+.b-survey{background:#fce4ec;color:#880e4f}.b-prod{background:#f3e5f5;color:#4a148c}
+.b-disp{background:#e3f2fd;color:#0d47a1}.b-inst{background:#e0f7fa;color:#006064}
+.b-hand{background:#ede7f6;color:#311b92}.b-enq{background:#fff3e0;color:#e65100}
+.b-comp{background:#e8f5e9;color:#1b5e20}.b-paid{background:#e8f5e9;color:#1b5e20}
+.b-partial{background:#fff8e1;color:#f57f17}.b-pending{background:#fff3e0;color:#e65100}
+.b-overdue{background:#ffebee;color:#b71c1c}.b-active{background:#e8f5e9;color:#2e7d32}
+.b-watch{background:#fff3e0;color:#e65100}.b-alert{background:#ffebee;color:#b71c1c}
+.zone-badge{background:var(--blue-l);color:var(--navy);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;transition:.15s}
+.btn-primary{background:var(--navy);color:white}.btn-primary:hover{background:var(--navy2)}
+.btn-secondary{background:var(--white);color:var(--text2);border:1px solid var(--gray3)}.btn-secondary:hover{background:var(--gray1)}
+.btn-gold{background:var(--gold);color:var(--navy)}.btn-gold:hover{background:var(--gold2)}
+.btn-row{display:flex;gap:6px;align-items:center}
+
+/* Forms */
+.form-label{display:block;font-size:10px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.form-input,.form-select{width:100%;padding:7px 10px;font-size:12px;border:1px solid var(--gray3);border-radius:7px;outline:none;background:var(--white);color:var(--text1)}
+.form-input:focus,.form-select:focus{border-color:var(--navy);box-shadow:0 0 0 2px rgba(0,32,96,.1)}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.form-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column}
+.form-error{font-size:10px;color:var(--red);margin-top:3px}
+.card{background:var(--white);border-radius:10px;border:1px solid var(--gray2);padding:14px;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
+
+/* Funnel */
+.funnel-wrap{display:flex;align-items:flex-end;gap:4px;height:160px;margin-bottom:8px}
+.funnel-bar{flex:1;border-radius:4px 4px 0 0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px}
+.funnel-labels{display:grid;gap:4px;text-align:center}
+
+/* Timeline */
+.timeline{display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:8px;gap:0}
+.t-node{display:flex;flex-direction:column;align-items:center;min-width:80px}
+.t-dot-done{width:24px;height:24px;border-radius:50%;background:var(--navy);color:white;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.t-dot-active{width:24px;height:24px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;outline:2px solid var(--navy);outline-offset:2px}
+.t-dot-pend{width:24px;height:24px;border-radius:50%;background:var(--gray2);color:var(--gray4);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.t-line-done{flex:1;height:2px;background:var(--navy);margin-top:11px;min-width:16px}
+.t-line-pend{flex:1;height:2px;background:var(--gray3);margin-top:11px;min-width:16px}
+.t-label{font-size:9px;color:var(--text3);margin-top:4px;text-align:center;line-height:1.3}
+.progress-bar{height:6px;background:var(--gray2);border-radius:10px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:var(--navy);border-radius:10px;transition:width .5s}
+
+/* Steps */
+.step-bar{display:flex;align-items:center;margin-bottom:16px}
+.step-node{display:flex;flex-direction:column;align-items:center}
+.step-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.sc-done{background:var(--navy);color:white}
+.sc-active{background:var(--gold);color:var(--navy);outline:2px solid var(--navy);outline-offset:2px}
+.sc-pend{background:var(--gray2);color:var(--gray4)}
+.step-label{font-size:9px;color:var(--text3);margin-top:4px;text-align:center}
+.step-line{flex:1;height:2px;margin:0 4px;margin-bottom:16px}
+.sl-done{background:var(--navy)}.sl-pend{background:var(--gray2)}
+
+/* Pagination */
+.pagination{display:flex;align-items:center;gap:4px;margin-top:4px}
+.pg-btn{padding:3px 8px;border-radius:5px;border:1px solid var(--gray3);cursor:pointer;font-size:11px;background:var(--white)}
+.pg-btn.active{background:var(--navy);color:white;border-color:var(--navy)}
+.pg-btn:disabled{opacity:.4;cursor:default}
+
+/* Filters */
+.filter-bar{background:var(--white);border-radius:10px;padding:8px 12px;border:1px solid var(--gray2);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.filter-bar select,.filter-bar input{padding:5px 8px;font-size:11px;border:1px solid var(--gray3);border-radius:6px;outline:none;height:30px}
+.filter-bar input{flex:1;min-width:160px}
+
+/* Payment stages */
+.pay-stage{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gray1);border-radius:8px;margin-bottom:6px}
+.pay-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.pi-paid{background:#e8f5e9;color:var(--green)}
+.pi-part{background:#fff8e1;color:var(--amber)}
+.pi-over{background:#ffebee;color:var(--red)}
+
+/* AI Chat */
+.chat-wrap{display:flex;flex-direction:column;height:380px;border:1px solid var(--gray2);border-radius:10px;overflow:hidden}
+.chat-header{padding:10px 14px;background:var(--navy);color:white;display:flex;align-items:center;gap:8px}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--white)}
+.msg-bot{display:flex;gap:8px;align-items:flex-start}
+.msg-user{display:flex;flex-direction:row-reverse;gap:8px;align-items:flex-start}
+.msg-avatar{width:26px;height:26px;border-radius:50%;background:var(--navy);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.msg-bubble-bot{background:var(--blue-l);border-radius:12px 12px 12px 2px;padding:8px 12px;font-size:11px;max-width:80%;line-height:1.5;color:var(--text1)}
+.msg-bubble-user{background:var(--navy);border-radius:12px 12px 2px 12px;padding:8px 12px;font-size:11px;max-width:80%;line-height:1.5;color:white}
+.msg-time{font-size:9px;color:var(--text3);margin-top:3px}
+.chat-input-row{display:flex;gap:6px;padding:8px;border-top:1px solid var(--gray2);background:var(--gray1)}
+.chat-input-row input{flex:1;padding:7px 12px;font-size:12px;border:1px solid var(--gray3);border-radius:20px;outline:none}
+.chat-send{width:32px;height:32px;border-radius:50%;background:var(--navy);color:white;border:none;cursor:pointer;font-size:14px}
+.quick-queries{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.qq-btn{font-size:10px;padding:4px 10px;background:var(--blue-l);color:var(--navy);border:1px solid #b3d4ef;border-radius:20px;cursor:pointer;font-weight:600}
+.qq-btn:hover{background:#cce0f5}
+.typing{display:flex;gap:3px;align-items:center;padding:6px 8px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--gray4);animation:bounce .8s ease infinite}
+.dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+/* Detail view */
+.detail-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray1)}
+.detail-label{font-size:11px;color:var(--text3)}
+.detail-val{font-size:11px;font-weight:600;color:var(--text1);text-align:right}
+
+/* Settings toggle */
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray1)}
+.toggle-label{font-size:12px;color:var(--text1)}
+.toggle-sub{font-size:10px;color:var(--text3)}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--gray3);border-radius:20px;cursor:pointer;transition:.3s}
+.slider:before{content:'';position:absolute;width:14px;height:14px;background:white;border-radius:50%;left:3px;top:3px;transition:.3s}
+input:checked+.slider{background:var(--navy)}
+input:checked+.slider:before{transform:translateX(16px)}
+
+/* Responsive */
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.chart-grid{grid-template-columns:1fr}.chart-grid-3{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.form-grid,.form-grid-2{grid-template-columns:1fr}#sidebar{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ── LOGIN ────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:16px">
+      <svg width="130" height="40" viewBox="0 0 200 64" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="28" fill="#002060"/>
+        <circle cx="32" cy="32" r="17" fill="none" stroke="white" stroke-width="3.5"/>
+        <ellipse cx="32" cy="32" rx="28" ry="11" fill="none" stroke="white" stroke-width="2.8" transform="rotate(-22 32 32)"/>
+        <text x="74" y="44" font-family="Arial,sans-serif" font-size="30" font-weight="800" fill="#002060">OZONE</text>
+      </svg>
+    </div>
+    <h2>Order Tracker Platform</h2>
+    <p>Enterprise Business Intelligence System</p>
+    <div style="margin-bottom:12px">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="l-email" value="admin@ozone.in" placeholder="Enter email"/>
+    </div>
+    <div style="margin-bottom:12px">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="l-pass" type="password" value="Admin@123" placeholder="Password"/>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="form-label">Role</label>
+      <select class="form-select" id="l-role">
+        <option value="admin">Super Administrator</option>
+        <option value="director">Director / Management</option>
+        <option value="zm">Zonal Manager (ZM)</option>
+        <option value="rsm">Regional Sales Manager (RSM)</option>
+        <option value="dse">DSE</option>
+        <option value="finance">Finance Team</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:9px" onclick="doLogin()">
+      🔒 Sign In to Platform
+    </button>
+    <p style="text-align:center;font-size:10px;color:#aaa;margin-top:12px">🛡️ Secured · Session monitored</p>
+  </div>
+</div>
+
+<!-- ── TOP NAV ─────────────────────────────── -->
+<div id="topnav">
+  <svg width="90" height="28" viewBox="0 0 200 64" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="32" cy="32" r="28" fill="rgba(255,255,255,.2)"/>
+    <circle cx="32" cy="32" r="17" fill="none" stroke="white" stroke-width="3.5"/>
+    <ellipse cx="32" cy="32" rx="28" ry="11" fill="none" stroke="white" stroke-width="2.8" transform="rotate(-22 32 32)"/>
+    <text x="74" y="44" font-family="Arial,sans-serif" font-size="30" font-weight="800" fill="white">OZONE</text>
+  </svg>
+  <div class="nav-sep"></div>
+  <span class="nav-title">Order Tracker</span>
+  <div style="flex:1;max-width:280px">
+    <input style="width:100%;padding:5px 10px 5px 28px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:white;font-size:11px;outline:none" placeholder="🔍  Search orders, partners…"/>
+  </div>
+  <div class="nav-right">
+    <button onclick="showNotif()" style="background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;position:relative">
+      🔔<span id="notif-badge" style="position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:#ef5350;border-radius:50%;font-size:8px;color:white;display:flex;align-items:center;justify-content:center;font-weight:700">3</span>
+    </button>
+    <span class="role-badge" id="role-badge">Super Admin</span>
+    <button class="user-btn" id="user-btn">👤 admin@ozone.in</button>
+    <button class="btn btn-secondary" onclick="doLogout()" style="font-size:10px;padding:4px 8px">Sign Out</button>
+  </div>
+</div>
+
+<!-- ── BODY ───────────────────────────────────── -->
+<div id="body">
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <nav style="padding:8px 0">
+    <div class="sidebar-label">Overview</div>
+    <div class="nav-item active" onclick="goTo('dashboard')"><span class="nav-icon">📊</span>Dashboard</div>
+    <div class="nav-item" onclick="goTo('analytics')"><span class="nav-icon">📈</span>Analytics</div>
+    <div class="sidebar-label">Order Management</div>
+    <div class="nav-item" onclick="goTo('orders')"><span class="nav-icon">📋</span>Orders</div>
+    <div class="nav-item" onclick="goTo('punch')"><span class="nav-icon">➕</span>Punch Order</div>
+    <div class="nav-item" onclick="goTo('lifecycle')"><span class="nav-icon">🔄</span>Lifecycle</div>
+    <div class="nav-item" onclick="goTo('funnel')"><span class="nav-icon">🔽</span>Sales Funnel</div>
+    <div class="sidebar-label">Business</div>
+    <div class="nav-item" onclick="goTo('partners')"><span class="nav-icon">🏢</span>Partners</div>
+    <div class="nav-item" onclick="goTo('payments')"><span class="nav-icon">💳</span>Payments</div>
+    <div class="sidebar-label">Intelligence</div>
+    <div class="nav-item" onclick="goTo('ai')"><span class="nav-icon">🤖</span>AI Assistant</div>
+    <div class="nav-item" onclick="goTo('reports')"><span class="nav-icon">📁</span>Reports</div>
+    <div class="sidebar-label">System</div>
+    <div class="nav-item" onclick="goTo('settings')"><span class="nav-icon">⚙️</span>Settings</div>
+  </nav>
+  <div style="padding:12px 14px;border-top:1px solid var(--gray2);margin-top:8px">
+    <div style="display:flex;align-items:center;gap:6px"><div class="sync-dot"></div><span style="font-size:10px;color:var(--text3)">Live · Auto-sync ON</span></div>
+    <div style="font-size:10px;color:var(--gray3);margin-top:4px">v1.0.0 · Ozone India 2025</div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div id="main">
+
+<!-- ═══ DASHBOARD ═══════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div><div class="page-title">Executive Dashboard</div><div class="page-sub">Live overview · June 2025</div></div>
+    <select class="form-select" style="width:130px;font-size:11px">
+      <option>This Month</option><option>This Quarter</option><option>This Year</option>
+    </select>
+  </div>
+  <div class="filter-bar">
+    <span style="font-size:10px;color:var(--text3);font-weight:600">Filters:</span>
+    <select><option value="">All Zones</option><option>North</option><option>South</option><option>East</option><option>West</option></select>
+    <select><option value="">All ZMs</option><option>Rajesh Kumar</option><option>Priya Nair</option><option>Suresh Patel</option><option>Anita Roy</option></select>
+    <select><option value="">All Products</option><option>Doors</option><option>Windows</option><option>Mesh</option></select>
+    <select><option value="">All Status</option><option>Won</option><option>Production</option><option>Dispatched</option><option>Lost</option></select>
+    <button class="btn btn-secondary" style="font-size:10px;padding:4px 8px">↺ Reset</button>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-top" style="background:#002060"></div><div class="kpi-icon">📋</div><div class="kpi-label">Total Enquiries</div><div class="kpi-val" style="color:#002060">482</div><div class="kpi-sub">₹3.8 Cr value</div><span class="trend-up">▲ +12.4%</span></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#1976D2"></div><div class="kpi-icon">📄</div><div class="kpi-label">Quotations</div><div class="kpi-val" style="color:#1976D2">341</div><div class="kpi-sub">₹2.9 Cr value</div><span class="trend-up">▲ +8.1%</span></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#2e7d32"></div><div class="kpi-icon">🏆</div><div class="kpi-label">Orders Won</div><div class="kpi-val" style="color:#2e7d32">198</div><div class="kpi-sub">58% win rate</div><span class="trend-up">▲ +15.2%</span></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#c62828"></div><div class="kpi-icon">❌</div><div class="kpi-label">Lost Opps</div><div class="kpi-val" style="color:#c62828">143</div><div class="kpi-sub">₹1.16 Cr</div><span class="trend-down">▼ -3.8%</span></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#E6A800"></div><div class="kpi-icon">📈</div><div class="kpi-label">Pipeline Value</div><div class="kpi-val" style="color:#E6A800">₹4.2 Cr</div><div class="kpi-sub">Active pipeline</div><span class="trend-up">▲ +9.6%</span></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#e65100"></div><div class="kpi-icon">🚚</div><div class="kpi-label">Pending Dispatch</div><div class="kpi-val" style="color:#e65100">47</div><div class="kpi-sub">Orders awaiting</div><span class="trend-neu">→ Stable</span></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#7b1fa2"></div><div class="kpi-icon">🔧</div><div class="kpi-label">Pending Install</div><div class="kpi-val" style="color:#7b1fa2">31</div><div class="kpi-sub">Site visits sched.</div><span class="trend-down">▼ -2.1%</span></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#00897b"></div><div class="kpi-icon">💰</div><div class="kpi-label">Collection %</div><div class="kpi-val" style="color:#00897b">76%</div><div class="kpi-sub">₹1.32 Cr of ₹1.74</div><span class="trend-up">▲ +4.3%</span></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Enquiry → Quote → Order Conversion</div><div class="chart-wrap" style="height:180px"><canvas id="chart-conv"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Revenue by Zone (₹ Lakhs)</div><div class="chart-wrap" style="height:180px"><canvas id="chart-zone"></canvas></div></div>
+  </div>
+  <div class="chart-grid-3">
+    <div class="chart-card"><div class="chart-title">Monthly Revenue Trend (₹ Lakhs)</div><div class="chart-wrap" style="height:160px"><canvas id="chart-rev"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Product Mix</div><div class="chart-wrap" style="height:160px"><canvas id="chart-pie"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ═══ ANALYTICS ═══════════════════════════════ -->
+<div class="page" id="page-analytics">
+  <div style="margin-bottom:12px"><div class="page-title">Analytics Engine</div><div class="page-sub">Multi-dimensional BI · June 2025</div></div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Win / Loss by Quarter</div><div class="chart-wrap" style="height:180px"><canvas id="chart-ql"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Top Partners Revenue (₹L)</div><div class="chart-wrap" style="height:180px"><canvas id="chart-partners"></canvas></div></div>
+  </div>
+  <div class="chart-card" style="margin-bottom:14px"><div class="chart-title">Full Year Pipeline — All Stages</div><div class="chart-wrap" style="height:180px"><canvas id="chart-fullyr"></canvas></div></div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Revenue with Forecast (₹L)</div><div class="chart-wrap" style="height:160px"><canvas id="chart-forecast"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Zone Comparison</div><div class="chart-wrap" style="height:160px"><canvas id="chart-zone2"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-header"><h3>Stage Conversion Rates</h3></div>
+    <table>
+      <thead><tr><th>Stage Transition</th><th>In</th><th>Out</th><th>Conv %</th><th>Avg Days</th><th>Status</th></tr></thead>
+      <tbody id="conv-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ ORDERS ═══════════════════════════════════ -->
+<div class="page" id="page-orders">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div><div class="page-title">Order Management</div><div class="page-sub" id="order-count-sub">12 orders · Updated just now</div></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" style="font-size:10px">⬇ Export</button>
+      <button class="btn btn-primary" onclick="goTo('punch')">➕ New Order</button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <input id="order-search" placeholder="Search SO#, customer, partner…" oninput="renderOrders()"/>
+    <select id="order-status-f" onchange="renderOrders()"><option value="">All Status</option><option>Won</option><option>Lost</option><option>Survey</option><option>Production</option><option>Dispatched</option><option>Installed</option><option>Completed</option></select>
+    <select id="order-zone-f" onchange="renderOrders()"><option value="">All Zones</option><option>North</option><option>South</option><option>East</option><option>West</option></select>
+    <select id="order-prod-f" onchange="renderOrders()"><option value="">All Products</option><option>Doors</option><option>Windows</option><option>Mesh</option></select>
+    <button class="btn btn-secondary" style="font-size:10px" onclick="document.getElementById('order-search').value='';document.getElementById('order-status-f').value='';document.getElementById('order-zone-f').value='';document.getElementById('order-prod-f').value='';renderOrders()">↺</button>
+  </div>
+  <div class="table-card">
+    <div class="table-header"><h3>All Orders</h3><div class="btn-row"><button class="btn btn-secondary" style="font-size:10px">⬇ CSV</button><button class="btn btn-secondary" style="font-size:10px">⬇ Excel</button></div></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Date</th><th>SO Number</th><th>Partner</th><th>Customer</th><th>Product</th><th>Zone</th><th>ZM</th><th>DSE</th><th>Qty</th><th>Value</th><th>Status</th><th>Payment</th></tr></thead><tbody id="orders-table"></tbody></table></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-top:1px solid var(--gray2)">
+      <span style="font-size:11px;color:var(--text3)" id="order-pager-info"></span>
+      <div class="pagination" id="order-pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ORDER DETAIL ══════════════════════════════ -->
+<div class="page" id="page-order-detail">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    <button class="btn btn-secondary" onclick="goTo('orders')">← Back</button>
+    <div><div class="page-title" id="od-title">SO-2025-001</div><div class="page-sub" id="od-sub">Customer · Partner</div></div>
+    <div class="btn-row" style="margin-left:auto" id="od-badges"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Order Lifecycle</div>
+    <div class="timeline" id="od-timeline"></div>
+    <div class="progress-bar"><div class="progress-fill" id="od-progress" style="width:50%"></div></div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px" id="od-pct">50% complete</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div class="card"><div class="card-title">Sales Information</div><div id="od-sales"></div></div>
+    <div class="card"><div class="card-title">Order Details</div><div id="od-order"></div></div>
+  </div>
+  <div class="card"><div class="card-title">Payment Details</div><div id="od-payment"></div></div>
+</div>
+
+<!-- ═══ PUNCH ORDER ═══════════════════════════════ -->
+<div class="page" id="page-punch">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div><div class="page-title">Punch New Order</div><div class="page-sub">Create order · Auto-syncs to Google Sheets</div></div>
+    <button class="btn btn-secondary" onclick="resetForm()">↺ Clear</button>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="step-bar" id="step-bar"></div>
+  </div>
+  <div id="step-content"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <button class="btn btn-secondary" id="btn-prev" onclick="prevStep()">← Back</button>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btn-draft">💾 Save Draft</button>
+      <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Next →</button>
+      <button class="btn btn-gold" id="btn-submit" style="display:none" onclick="submitOrder()">📤 Submit & Sync to Sheets</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LIFECYCLE ══════════════════════════════════ -->
+<div class="page" id="page-lifecycle">
+  <div style="margin-bottom:12px"><div class="page-title">Order Lifecycle Tracker</div><div class="page-sub">Real-time stage tracking for every order</div></div>
+  <div class="filter-bar">
+    <input id="lc-search" placeholder="Search SO# or customer…" oninput="renderLifecycle()"/>
+    <select id="lc-stage" onchange="renderLifecycle()"><option value="">All Stages</option><option>Won</option><option>Survey</option><option>Production</option><option>Dispatched</option><option>Installed</option><option>Completed</option></select>
+  </div>
+  <div id="lifecycle-list"></div>
+</div>
+
+<!-- ═══ SALES FUNNEL ══════════════════════════════ -->
+<div class="page" id="page-funnel">
+  <div style="margin-bottom:12px"><div class="page-title">Sales Funnel</div><div class="page-sub">Full pipeline visibility enquiry → completion</div></div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px"><span class="chart-title">Order Pipeline Funnel — June 2025</span><div style="font-size:10px;color:var(--text3)">Total: 482 enquiries · 91 completed · 18.9% conv.</div></div>
+    <div class="funnel-wrap" id="funnel-bars"></div>
+    <div class="funnel-labels" id="funnel-labels" style="grid-template-columns:repeat(9,1fr)"></div>
+  </div>
+  <div class="chart-grid" style="margin-top:12px">
+    <div class="chart-card"><div class="chart-title">Stage Conversion Rates (%)</div><div class="chart-wrap" style="height:180px"><canvas id="chart-conv-rates"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Average Stage Aging (Days)</div><div class="chart-wrap" style="height:180px"><canvas id="chart-aging"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ═══ PARTNERS ══════════════════════════════════ -->
+<div class="page" id="page-partners">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div><div class="page-title">Partner Performance Center</div><div class="page-sub">10 active partners</div></div>
+    <button class="btn btn-secondary">⬇ Export</button>
+  </div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-top" style="background:#002060"></div><div class="kpi-label">Total Enquiries</div><div class="kpi-val" style="color:#002060">454</div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#2e7d32"></div><div class="kpi-label">Total Orders</div><div class="kpi-val" style="color:#2e7d32">217</div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#1976D2"></div><div class="kpi-label">Total Revenue</div><div class="kpi-val" style="color:#1976D2">₹1838L</div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#c62828"></div><div class="kpi-label">Pending Payments</div><div class="kpi-val" style="color:#c62828">₹305L</div></div>
+  </div>
+  <div class="filter-bar">
+    <input id="partner-search" placeholder="Search partner or state…" oninput="renderPartners()"/>
+    <select id="partner-zone" onchange="renderPartners()"><option value="">All Zones</option><option>North</option><option>South</option><option>East</option><option>West</option></select>
+    <select id="partner-sort" onchange="renderPartners()"><option value="orderVal">Sort: Revenue</option><option value="winRate">Sort: Win Rate</option><option value="orderQty">Sort: Orders</option></select>
+  </div>
+  <div class="table-card">
+    <div class="table-header"><h3>Partner Scorecard</h3></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Partner</th><th>Zone</th><th>ZM</th><th>State</th><th>Enq</th><th>Orders</th><th>Revenue</th><th>Lost</th><th>Win Rate</th><th>Pending</th><th>Status</th></tr></thead><tbody id="partners-table"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══ PAYMENTS ══════════════════════════════════ -->
+<div class="page" id="page-payments">
+  <div style="margin-bottom:12px"><div class="page-title">Payment Management</div><div class="page-sub">5-stage payment tracking across all orders</div></div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-top" style="background:#002060"></div><div class="kpi-icon">✅</div><div class="kpi-label">Total Receivable</div><div class="kpi-val" style="color:#002060">₹1.74 Cr</div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#2e7d32"></div><div class="kpi-icon">✅</div><div class="kpi-label">Collected</div><div class="kpi-val" style="color:#2e7d32">₹1.32 Cr</div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#e65100"></div><div class="kpi-icon">⏱</div><div class="kpi-label">Outstanding</div><div class="kpi-val" style="color:#e65100">₹42L</div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:#c62828"></div><div class="kpi-icon">⚠️</div><div class="kpi-label">Overdue</div><div class="kpi-val" style="color:#c62828">₹11L</div></div>
+  </div>
+  <div class="chart-grid-3">
+    <div class="chart-card"><div class="chart-title">Collection by Stage (₹L)</div><div class="chart-wrap" style="height:180px"><canvas id="chart-pay-stage"></canvas></div></div>
+    <div class="chart-card">
+      <div class="chart-title">Aging Analysis</div>
+      <div style="margin-top:8px">
+        <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>0–30 days</span><span style="color:var(--green);font-weight:700">₹18L</span></div><div class="progress-bar"><div class="progress-fill" style="width:42%;background:var(--green)"></div></div></div>
+        <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>31–60 days</span><span style="color:var(--amber);font-weight:700">₹12L</span></div><div class="progress-bar"><div class="progress-fill" style="width:28%;background:var(--amber)"></div></div></div>
+        <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>61–90 days</span><span style="color:#c62828;font-weight:700">₹8L</span></div><div class="progress-bar"><div class="progress-fill" style="width:19%;background:#c62828"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>&gt;90 days</span><span style="color:#7b1fa2;font-weight:700">₹4L</span></div><div class="progress-bar"><div class="progress-fill" style="width:11%;background:#7b1fa2"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">5-Stage Payment Tracker</div>
+    <div class="pay-stage"><div class="pay-icon pi-paid">✅</div><div style="flex:1"><div style="font-size:12px;font-weight:600">Advance Payment</div><div style="font-size:10px;color:var(--text3)">30% of order value</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--navy)">₹52L collected</div></div><span class="badge b-paid">Paid</span></div>
+    <div class="pay-stage"><div class="pay-icon pi-paid">✅</div><div style="flex:1"><div style="font-size:12px;font-weight:600">Survey Payment</div><div style="font-size:10px;color:var(--text3)">10% of order value</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--navy)">₹17L collected</div></div><span class="badge b-paid">Paid</span></div>
+    <div class="pay-stage"><div class="pay-icon pi-part">⏱</div><div style="flex:1"><div style="font-size:12px;font-weight:600">Production Payment</div><div style="font-size:10px;color:var(--text3)">30% of order value</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--navy)">₹28L collected</div><div style="font-size:10px;color:var(--red)">₹24L pending</div></div><span class="badge b-partial">Partial</span></div>
+    <div class="pay-stage"><div class="pay-icon pi-part">⏱</div><div style="flex:1"><div style="font-size:12px;font-weight:600">Dispatch Payment</div><div style="font-size:10px;color:var(--text3)">20% of order value</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--navy)">₹8L collected</div><div style="font-size:10px;color:var(--red)">₹27L pending</div></div><span class="badge b-partial">Partial</span></div>
+    <div class="pay-stage"><div class="pay-icon pi-over">⚠️</div><div style="flex:1"><div style="font-size:12px;font-weight:600">Final Payment</div><div style="font-size:10px;color:var(--text3)">10% of order value</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--red)">₹17L overdue</div></div><span class="badge b-overdue">Overdue</span></div>
+  </div>
+  <div class="table-card">
+    <div class="table-header"><h3>⚠️ Overdue — Immediate Action Required</h3></div>
+    <table><thead><tr><th>Partner</th><th>Amount</th><th>Days Overdue</th><th>Zone</th><th>Severity</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td style="font-weight:700;color:var(--navy)">Apex Glazing</td><td style="color:var(--red);font-weight:700">₹4.2L</td><td style="color:var(--red);font-weight:700">32 days</td><td>South</td><td><span class="badge b-overdue">Critical</span></td><td><button class="btn btn-secondary" style="font-size:10px;padding:3px 8px">Escalate</button></td></tr>
+      <tr><td style="font-weight:700;color:var(--navy)">City Glazing</td><td style="color:var(--amber);font-weight:700">₹3.6L</td><td style="color:var(--amber);font-weight:700">18 days</td><td>East</td><td><span class="badge b-pending">High</span></td><td><button class="btn btn-secondary" style="font-size:10px;padding:3px 8px">Escalate</button></td></tr>
+      <tr><td style="font-weight:700;color:var(--navy)">Vista Glass</td><td style="font-weight:700">₹3.2L</td><td>14 days</td><td>West</td><td><span class="badge b-watch">Medium</span></td><td><button class="btn btn-secondary" style="font-size:10px;padding:3px 8px">Follow Up</button></td></tr>
+    </tbody></table>
+  </div>
+</div>
+
+<!-- ═══ AI ASSISTANT ══════════════════════════════ -->
+<div class="page" id="page-ai">
+  <div style="margin-bottom:12px"><div class="page-title">AI Business Assistant</div><div class="page-sub">Powered by Claude · Real-time intelligence</div></div>
+  <div class="quick-queries">
+    <button class="qq-btn" onclick="sendQ('Top partners this month')">Top partners this month</button>
+    <button class="qq-btn" onclick="sendQ('Highest revenue state?')">Highest revenue state?</button>
+    <button class="qq-btn" onclick="sendQ('Orders at risk')">Orders at risk</button>
+    <button class="qq-btn" onclick="sendQ('Why did conversion drop?')">Why conversion dropped?</button>
+    <button class="qq-btn" onclick="sendQ('Overdue payments')">Overdue payments</button>
+    <button class="qq-btn" onclick="sendQ('Forecast next month')">Forecast next month</button>
+    <button class="qq-btn" onclick="sendQ('Zone performance')">Zone performance</button>
+    <button class="qq-btn" onclick="sendQ('Pending dispatch orders')">Pending dispatch</button>
+  </div>
+  <div class="chat-wrap">
+    <div class="chat-header">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center">🤖</div>
+      <div><div style="font-size:12px;font-weight:600">Ozone AI Assistant</div><div style="font-size:10px;opacity:.6;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#4caf50;display:inline-block"></span>Online · Analyzing live data</div></div>
+      <div style="margin-left:auto;font-size:10px;opacity:.6">⚡ Claude AI</div>
+    </div>
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <div class="chat-input-row">
+      <input id="chat-input" placeholder="Ask about your business data…" onkeydown="if(event.key==='Enter')sendMsg()"/>
+      <button class="chat-send" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ REPORTS ════════════════════════════════════ -->
+<div class="page" id="page-reports">
+  <div style="margin-bottom:12px"><div class="page-title">Reports & Export Center</div><div class="page-sub">Generate, schedule, and download reports</div></div>
+  <div style="margin-bottom:12px;padding:10px 14px;background:var(--blue-l);border:1px solid #b3d4ef;border-radius:10px;display:flex;align-items:center;gap:10px">
+    <div style="width:32px;height:32px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;color:white">📅</div>
+    <div><div style="font-size:11px;font-weight:700;color:var(--navy)">Scheduled Reports Active</div><div style="font-size:10px;color:var(--text3)">Daily digest 8 AM · Weekly summary Monday · Monthly report 1st</div></div>
+    <button class="btn btn-secondary" style="margin-left:auto;font-size:10px">Manage</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px" id="report-cards"></div>
+  <div class="card">
+    <div class="card-title">Custom Export</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Date Range</label><select class="form-select"><option>This Month</option><option>This Quarter</option><option>Custom Range</option></select></div>
+      <div class="form-group"><label class="form-label">Modules</label><select class="form-select"><option>All Modules</option><option>Orders Only</option><option>Payments Only</option></select></div>
+      <div class="form-group"><label class="form-label">Format</label><select class="form-select"><option>Excel (.xlsx)</option><option>CSV (.csv)</option><option>PDF (.pdf)</option></select></div>
+    </div>
+    <button class="btn btn-primary">⬇ Generate Custom Report</button>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS ═════════════════════════════════= -->
+<div class="page" id="page-settings">
+  <div style="margin-bottom:12px"><div class="page-title">Administration & Settings</div><div class="page-sub">System configuration, integrations, platform controls</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="card">
+      <div class="card-title">Google Sheets Integration</div>
+      <div class="detail-row"><span class="detail-label">Status</span><span style="color:var(--green);font-weight:700;font-size:11px">🟢 Connected</span></div>
+      <div class="detail-row"><span class="detail-label">Sheet ID</span><span class="detail-val">1BxiMVs0XwRpQNQY…</span></div>
+      <div class="detail-row"><span class="detail-label">Sheet Name</span><span class="detail-val">Sheet1</span></div>
+      <div class="detail-row"><span class="detail-label">Last Synced</span><span class="detail-val">2 minutes ago</span></div>
+      <div class="detail-row"><span class="detail-label">Columns Detected</span><span class="detail-val" style="color:var(--navy)">93 columns ✓</span></div>
+      <div class="detail-row"><span class="detail-label">Auto-Sync</span><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-secondary" style="font-size:10px">↺ Test Connection</button><button class="btn btn-primary" style="font-size:10px">Change Sheet</button></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Column Mapping Engine</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Auto-detected 93 columns from your sheet</div>
+      <div style="max-height:180px;overflow-y:auto" id="col-map-list"></div>
+      <button class="btn btn-secondary" style="font-size:10px;margin-top:8px">Show all 93 columns</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Notification Channels</div>
+      <div class="toggle-row"><div><div class="toggle-label">Email Alerts</div></div><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">WhatsApp</div><div class="toggle-sub">Requires WhatsApp Business API</div></div><label class="toggle"><input type="checkbox"/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Payment Overdue Alerts</div></div><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Dispatch Delay Alerts</div></div><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Installation Delay Alerts</div></div><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div style="margin-top:10px;padding:8px;background:#fff8e1;border-radius:7px"><div style="font-size:11px;font-weight:600;color:var(--amber)">3 active alerts pending</div><div style="font-size:10px;color:#795548;margin-top:2px">SO-2025-005 survey · Apex payment · SO-2025-003 dispatch</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">User Management & Security</div>
+      <div class="detail-row"><span class="detail-label">Active Users</span><span class="detail-val">24</span></div>
+      <div class="detail-row"><span class="detail-label">Roles Configured</span><span class="detail-val">7</span></div>
+      <div class="toggle-row"><div><div class="toggle-label">MFA Enabled</div></div><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Auto Logout (30 min)</div></div><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Audit Logging</div></div><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Export Tracking</div></div><label class="toggle"><input type="checkbox" checked/><span class="slider"></span></label></div>
+      <div style="margin-top:10px;padding:8px;background:var(--gray1);border-radius:7px;font-size:10px;color:var(--text3)">Last login: Today 09:42 AM · Session: 🟢 Active 2h 14m</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end #main -->
+</div><!-- end #body -->
+</div><!-- end #app -->
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────
+const ORDERS=[
+  {id:1,sno:'SO-2025-001',date:'2025-06-01',custCode:'C001',partner:'ABC Interiors',salesPerson:'Amit Sharma',customer:'Sunrise Residency',product:'Doors',category:'Customised',color:'White',qty:24,address:'Sector 45, Gurugram',basicValue:285000,installBy:'Ozone',location:'Gurugram',zone:'North',zm:'Rajesh Kumar',rsm:'Amit Shah',quotNo:'QN-001',invoiceNo:'INV-001',soDate:'2025-06-05',status:'Installed',payStatus:'Paid',advPct:30,advAmt:85500,advTxn:'UTR001',advDate:'2025-06-03',surveyDate:'2025-06-08',dispatchDate:'2025-06-18',installStart:'2025-06-24',installEnd:'2025-06-26',handover:'2025-06-27',remarks:'Premium project'},
+  {id:2,sno:'SO-2025-002',date:'2025-06-02',custCode:'C002',partner:'XYZ Facades',salesPerson:'Neha Singh',customer:'Green Park Society',product:'Windows',category:'Kit',color:'Brown',qty:36,address:'Koramangala, Bengaluru',basicValue:420000,installBy:'Partner',location:'Bengaluru',zone:'South',zm:'Priya Nair',rsm:'Sanjay Rao',quotNo:'QN-002',invoiceNo:'',soDate:'2025-06-07',status:'Production',payStatus:'Partial',advPct:30,advAmt:126000,advTxn:'UTR002',advDate:'2025-06-05',surveyDate:'2025-06-10',dispatchDate:'',installStart:'',installEnd:'',handover:'',remarks:'Large order - priority'},
+  {id:3,sno:'SO-2025-003',date:'2025-06-03',custCode:'C003',partner:'Metro Build',salesPerson:'Ravi Kumar',customer:'Imperial Heights',product:'Mesh',category:'Customised',color:'Grey',qty:18,address:'Powai, Mumbai',basicValue:176000,installBy:'Customer',location:'Mumbai',zone:'West',zm:'Suresh Patel',rsm:'Deepak Joshi',quotNo:'QN-003',invoiceNo:'INV-003',soDate:'2025-06-09',status:'Dispatched',payStatus:'Partial',advPct:30,advAmt:52800,advTxn:'UTR003',advDate:'2025-06-06',surveyDate:'2025-06-12',dispatchDate:'2025-06-22',installStart:'',installEnd:'',handover:'',remarks:''},
+  {id:4,sno:'SO-2025-004',date:'2025-06-04',custCode:'C004',partner:'City Glazing',salesPerson:'Vijay Pillai',customer:'Sea View Apts',product:'Doors',category:'Kit',color:'White',qty:42,address:'New Town, Kolkata',basicValue:510000,installBy:'Ozone',location:'Kolkata',zone:'East',zm:'Anita Roy',rsm:'Vijay Das',quotNo:'QN-004',invoiceNo:'INV-004',soDate:'2025-06-10',status:'Installed',payStatus:'Paid',advPct:30,advAmt:153000,advTxn:'UTR004',advDate:'2025-06-07',surveyDate:'2025-06-14',dispatchDate:'2025-06-20',installStart:'2025-06-26',installEnd:'2025-06-28',handover:'2025-06-29',remarks:'VIP client'},
+  {id:5,sno:'SO-2025-005',date:'2025-06-05',custCode:'C005',partner:'Premium Windows',salesPerson:'Pooja Mehta',customer:'Lakewood Villas',product:'Windows',category:'Customised',color:'Beige',qty:30,address:'DLF Phase 3, Gurugram',basicValue:365000,installBy:'Ozone',location:'Gurugram',zone:'North',zm:'Rajesh Kumar',rsm:'Priya Mehta',quotNo:'QN-005',invoiceNo:'',soDate:'',status:'Survey',payStatus:'Pending',advPct:30,advAmt:109500,advTxn:'UTR005',advDate:'2025-06-08',surveyDate:'',dispatchDate:'',installStart:'',installEnd:'',handover:'',remarks:'Survey pending >7 days'},
+  {id:6,sno:'SO-2025-006',date:'2025-06-06',custCode:'C006',partner:'ABC Interiors',salesPerson:'Sanjay Rao',customer:'Horizon Towers',product:'Doors',category:'Kit',color:'Champagne',qty:60,address:'Bandra West, Mumbai',basicValue:720000,installBy:'Partner',location:'Mumbai',zone:'South',zm:'Priya Nair',rsm:'Kavita Sharma',quotNo:'QN-006',invoiceNo:'',soDate:'',status:'Won',payStatus:'Partial',advPct:30,advAmt:216000,advTxn:'UTR006',advDate:'2025-06-10',surveyDate:'',dispatchDate:'',installStart:'',installEnd:'',handover:'',remarks:'Largest order this month'},
+  {id:7,sno:'SO-2025-007',date:'2025-06-07',custCode:'C007',partner:'Vista Glass',salesPerson:'Deepak Kumar',customer:'Palm Court',product:'Mesh',category:'Customised',color:'Grey',qty:15,address:'Whitefield, Bengaluru',basicValue:145000,installBy:'Customer',location:'Bengaluru',zone:'West',zm:'Suresh Patel',rsm:'Meena Desai',quotNo:'QN-007',invoiceNo:'',soDate:'',status:'Lost',payStatus:'Pending',advPct:0,advAmt:0,advTxn:'',advDate:'',surveyDate:'',dispatchDate:'',installStart:'',installEnd:'',handover:'',remarks:'Lost to competitor'},
+  {id:8,sno:'SO-2025-008',date:'2025-06-08',custCode:'C008',partner:'Excel Build',salesPerson:'Rohit Jain',customer:'Maple Grove',product:'Doors',category:'Customised',color:'Brown',qty:28,address:'Andheri East, Mumbai',basicValue:340000,installBy:'Ozone',location:'Mumbai',zone:'West',zm:'Suresh Patel',rsm:'Deepak Joshi',quotNo:'QN-008',invoiceNo:'',soDate:'2025-06-15',status:'Production',payStatus:'Partial',advPct:30,advAmt:102000,advTxn:'UTR008',advDate:'2025-06-11',surveyDate:'2025-06-16',dispatchDate:'',installStart:'',installEnd:'',handover:'',remarks:''},
+  {id:9,sno:'SO-2025-009',date:'2025-06-09',custCode:'C009',partner:'Apex Glazing',salesPerson:'Kavita Shah',customer:'Blue Bay',product:'Windows',category:'Kit',color:'White',qty:20,address:'Salt Lake, Kolkata',basicValue:245000,installBy:'Partner',location:'Kolkata',zone:'East',zm:'Anita Roy',rsm:'Rita Sen',quotNo:'QN-009',invoiceNo:'INV-009',soDate:'2025-06-16',status:'Dispatched',payStatus:'Pending',advPct:30,advAmt:73500,advTxn:'UTR009',advDate:'2025-06-13',surveyDate:'2025-06-18',dispatchDate:'2025-06-25',installStart:'',installEnd:'',handover:'',remarks:'Dispatch payment pending'},
+  {id:10,sno:'SO-2025-010',date:'2025-06-10',custCode:'C010',partner:'Metro Build',salesPerson:'Manish Verma',customer:'Silver Oak',product:'Doors',category:'Kit',color:'Ivory',qty:50,address:'Gachibowli, Hyderabad',basicValue:615000,installBy:'Ozone',location:'Hyderabad',zone:'South',zm:'Priya Nair',rsm:'Sanjay Rao',quotNo:'QN-010',invoiceNo:'INV-010',soDate:'2025-06-18',status:'Won',payStatus:'Paid',advPct:30,advAmt:184500,advTxn:'UTR010',advDate:'2025-06-13',surveyDate:'',dispatchDate:'',installStart:'',installEnd:'',handover:'',remarks:'Repeat customer'},
+  {id:11,sno:'SO-2025-011',date:'2025-05-15',custCode:'C011',partner:'BuildPro',salesPerson:'Amit Sharma',customer:'Greenfield Estate',product:'Partition',category:'Customised',color:'White',qty:8,address:'Sector 62, Noida',basicValue:192000,installBy:'Ozone',location:'Noida',zone:'North',zm:'Rajesh Kumar',rsm:'Amit Shah',quotNo:'QN-011',invoiceNo:'INV-011',soDate:'2025-05-20',status:'Completed',payStatus:'Paid',advPct:30,advAmt:57600,advTxn:'UTR011',advDate:'2025-05-18',surveyDate:'2025-05-22',dispatchDate:'2025-05-28',installStart:'2025-06-02',installEnd:'2025-06-04',handover:'2025-06-05',remarks:'Completed successfully'},
+  {id:12,sno:'SO-2025-012',date:'2025-05-20',custCode:'C012',partner:'Skyline Glass',salesPerson:'Neha Singh',customer:'Prestige Tower',product:'Windows',category:'Kit',color:'Grey',qty:44,address:'JP Nagar, Bengaluru',basicValue:528000,installBy:'Partner',location:'Bengaluru',zone:'South',zm:'Priya Nair',rsm:'Kavita Sharma',quotNo:'QN-012',invoiceNo:'INV-012',soDate:'2025-05-25',status:'Handover',payStatus:'Partial',advPct:30,advAmt:158400,advTxn:'UTR012',advDate:'2025-05-23',surveyDate:'2025-05-28',dispatchDate:'2025-06-05',installStart:'2025-06-15',installEnd:'2025-06-20',handover:'',remarks:'Final handover pending'},
+];
+
+const PARTNERS=[
+  {id:1,name:'ABC Interiors',zone:'North',zm:'Rajesh Kumar',state:'Delhi',enqQty:82,orderQty:48,orderVal:420,lostQty:17,winRate:74,pendingPay:32,status:'active'},
+  {id:2,name:'XYZ Facades',zone:'South',zm:'Priya Nair',state:'Karnataka',enqQty:71,orderQty:39,orderVal:360,lostQty:19,winRate:67,pendingPay:51,status:'active'},
+  {id:3,name:'Metro Build',zone:'West',zm:'Suresh Patel',state:'Maharashtra',enqQty:55,orderQty:28,orderVal:290,lostQty:15,winRate:65,pendingPay:28,status:'active'},
+  {id:4,name:'City Glazing',zone:'East',zm:'Anita Roy',state:'West Bengal',enqQty:48,orderQty:22,orderVal:210,lostQty:14,winRate:61,pendingPay:43,status:'active'},
+  {id:5,name:'Premium Windows',zone:'North',zm:'Rajesh Kumar',state:'Haryana',enqQty:42,orderQty:18,orderVal:170,lostQty:13,winRate:58,pendingPay:19,status:'watch'},
+  {id:6,name:'Apex Glazing',zone:'South',zm:'Priya Nair',state:'Tamil Nadu',enqQty:38,orderQty:15,orderVal:140,lostQty:12,winRate:56,pendingPay:67,status:'alert'},
+  {id:7,name:'Vista Glass',zone:'West',zm:'Suresh Patel',state:'Maharashtra',enqQty:35,orderQty:14,orderVal:132,lostQty:12,winRate:54,pendingPay:15,status:'active'},
+  {id:8,name:'Excel Build',zone:'West',zm:'Suresh Patel',state:'Maharashtra',enqQty:30,orderQty:12,orderVal:118,lostQty:10,winRate:55,pendingPay:22,status:'active'},
+  {id:9,name:'Skyline Glass',zone:'South',zm:'Priya Nair',state:'Karnataka',enqQty:28,orderQty:11,orderVal:105,lostQty:9,winRate:55,pendingPay:18,status:'active'},
+  {id:10,name:'BuildPro',zone:'North',zm:'Rajesh Kumar',state:'UP',enqQty:25,orderQty:10,orderVal:96,lostQty:8,winRate:56,pendingPay:10,status:'active'},
+];
+
+const MONTHLY=[
+  {m:'Jan',enq:72,q:52,won:28,lost:24,rev:18},{m:'Feb',enq:68,q:49,won:26,lost:23,rev:22},
+  {m:'Mar',enq:85,q:61,won:34,lost:27,rev:26},{m:'Apr',enq:80,q:57,won:33,lost:24,rev:29},
+  {m:'May',enq:90,q:65,won:38,lost:27,rev:31},{m:'Jun',enq:87,q:62,won:35,lost:27,rev:34},
+];
+
+const STATUS_IDX={Enquiry:0,Quote:1,Won:2,Survey:3,Production:4,Dispatched:5,Installed:6,Handover:7,Completed:8,Lost:-1};
+const STAGES=['Enquiry','Quote','Approval','Survey','Production','Dispatch','Install','Handover','Complete'];
+const STATUS_BADGE_MAP={Won:'b-won',Lost:'b-lost',Survey:'b-survey',Production:'b-prod',Dispatched:'b-disp',Installed:'b-inst',Handover:'b-hand',Enquiry:'b-enq',Completed:'b-comp'};
+const PAY_BADGE_MAP={Paid:'b-paid',Partial:'b-partial',Pending:'b-pending',Overdue:'b-overdue'};
+
+// ── NAVIGATION ─────────────────────────────────────────────────
+let currentPage='dashboard';
+function goTo(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.toLowerCase().includes(page.replace('-',' ').replace('punch','punch'))||n.getAttribute('onclick')?.includes("'"+page+"'")){n.classList.add('active')}});
+  currentPage=page;
+  if(page==='orders')renderOrders();
+  if(page==='partners')renderPartners();
+  if(page==='lifecycle')renderLifecycle();
+  if(page==='punch'){renderStepBar();renderStepContent();}
+  if(page==='ai')initChat();
+  if(page==='reports')renderReports();
+  if(page==='settings')renderColMap();
+  if(page==='funnel')renderFunnel();
+  if(page==='analytics')setTimeout(initAnalyticsCharts,100);
+  if(page==='payments')setTimeout(initPayChart,100);
+}
+
+// ── LOGIN ──────────────────────────────────────────────────────
+const ROLE_LABELS={admin:'Super Admin',director:'Director',zm:'Zonal Manager',rsm:'RSM',asm:'ASM',dse:'DSE',finance:'Finance'};
+function doLogin(){
+  const role=document.getElementById('l-role').value;
+  document.getElementById('role-badge').textContent=ROLE_LABELS[role]||'User';
+  document.getElementById('user-btn').textContent='👤 '+document.getElementById('l-email').value;
+  document.getElementById('login-screen').style.display='none';
+  initDashboardCharts();
+}
+function doLogout(){document.getElementById('login-screen').style.display='flex';}
+
+// ── CHARTS (dashboard) ─────────────────────────────────────────
+let chartsInit=false;
+function initDashboardCharts(){
+  if(chartsInit)return; chartsInit=true;
+  const mo=MONTHLY,opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}}}};
+  new Chart(document.getElementById('chart-conv'),{type:'bar',data:{labels:mo.map(d=>d.m),datasets:[{label:'Enquiries',data:mo.map(d=>d.enq),backgroundColor:'#002060',borderRadius:2},{label:'Quotes',data:mo.map(d=>d.q),backgroundColor:'#378ADD',borderRadius:2},{label:'Won',data:mo.map(d=>d.won),backgroundColor:'#2e7d32',borderRadius:2}]},options:{...opts,plugins:{...opts.plugins}}});
+  new Chart(document.getElementById('chart-zone'),{type:'bar',data:{labels:['North','South','West','East'],datasets:[{label:'Revenue',data:[42,36,28,22],backgroundColor:['#002060','#1976D2','#42A5F5','#90CAF9'],borderRadius:4}]},options:{...opts,indexAxis:'y'}});
+  new Chart(document.getElementById('chart-rev'),{type:'line',data:{labels:mo.map(d=>d.m),datasets:[{label:'Revenue',data:mo.map(d=>d.rev),borderColor:'#002060',borderWidth:2.5,fill:true,backgroundColor:'rgba(55,138,221,.08)',tension:0.4,pointRadius:3}]},options:{...opts}});
+  new Chart(document.getElementById('chart-pie'),{type:'doughnut',data:{labels:['Doors','Windows','Mesh'],datasets:[{data:[45,30,25],backgroundColor:['#002060','#FFC000','#378ADD'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}}}});
+}
+
+function initAnalyticsCharts(){
+  const exists=(id)=>Chart.getChart(document.getElementById(id));
+  const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}}}};
+  if(!exists('chart-ql'))new Chart(document.getElementById('chart-ql'),{type:'bar',data:{labels:['Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25'],datasets:[{label:'Won',data:[84,97,108,124,136,141],backgroundColor:'#002060',borderRadius:2},{label:'Lost',data:[58,63,71,79,88,94],backgroundColor:'#ef9a9a',borderRadius:2}]},options:opts});
+  const tp=PARTNERS.sort((a,b)=>b.orderVal-a.orderVal).slice(0,6);
+  if(!exists('chart-partners'))new Chart(document.getElementById('chart-partners'),{type:'bar',data:{labels:tp.map(p=>p.name),datasets:[{label:'Revenue ₹L',data:tp.map(p=>p.orderVal),backgroundColor:['#002060','#1565c0','#1976D2','#1E88E5','#42A5F5','#5E97F6'],borderRadius:2}]},options:{...opts,indexAxis:'y'}});
+  if(!exists('chart-fullyr'))new Chart(document.getElementById('chart-fullyr'),{type:'bar',data:{labels:MONTHLY.map(d=>d.m),datasets:[{label:'Enquiry',data:MONTHLY.map(d=>d.enq),backgroundColor:'#002060',borderRadius:2},{label:'Quote',data:MONTHLY.map(d=>d.q),backgroundColor:'#1976D2',borderRadius:2},{label:'Won',data:MONTHLY.map(d=>d.won),backgroundColor:'#2e7d32',borderRadius:2},{label:'Lost',data:MONTHLY.map(d=>d.lost),backgroundColor:'#ef9a9a',borderRadius:2}]},options:opts});
+  const fcData=[...MONTHLY.map(d=>d.rev),36,38];
+  const fcLabels=[...MONTHLY.map(d=>d.m),'Jul*','Aug*'];
+  if(!exists('chart-forecast'))new Chart(document.getElementById('chart-forecast'),{type:'line',data:{labels:fcLabels,datasets:[{label:'Revenue',data:fcData,borderColor:'#002060',borderWidth:2.5,fill:true,backgroundColor:'rgba(55,138,221,.08)',tension:0.4,pointRadius:3}]},options:opts});
+  if(!exists('chart-zone2'))new Chart(document.getElementById('chart-zone2'),{type:'bar',data:{labels:['North','South','West','East'],datasets:[{label:'Orders',data:[58,48,38,30],backgroundColor:'#002060',borderRadius:2},{label:'Rev ₹L',data:[42,36,28,22],backgroundColor:'#FFC000',borderRadius:2}]},options:opts});
+  const convData=[{t:'Enq→Quote',ci:482,co:341,pct:71,days:3},{t:'Quote→Apprvl',ci:341,co:260,pct:76,days:5},{t:'Apprvl→Survey',ci:260,co:218,pct:84,days:4},{t:'Survey→Prod',ci:218,co:186,pct:85,days:8},{t:'Prod→Dispatch',ci:186,co:162,pct:87,days:14},{t:'Dispatch→Inst',ci:162,co:134,pct:83,days:6},{t:'Inst→Complete',ci:134,co:91,pct:68,days:12}];
+  const tb=document.getElementById('conv-table');
+  tb.innerHTML=convData.map(r=>`<tr><td style="font-weight:600">${r.t}</td><td>${r.ci}</td><td>${r.co}</td><td><span style="font-weight:700;color:${r.pct>=80?'#2e7d32':r.pct>=70?'#e65100':'#c62828'}">${r.pct}%</span></td><td>${r.days}</td><td><span class="badge ${r.pct>=80?'b-inst':r.pct>=70?'b-paid':'b-watch'}">${r.pct>=80?'Excellent':r.pct>=70?'Good':'Watch'}</span></td></tr>`).join('');
+}
+
+function initPayChart(){
+  if(Chart.getChart(document.getElementById('chart-pay-stage')))return;
+  new Chart(document.getElementById('chart-pay-stage'),{type:'bar',data:{labels:['Advance','Survey','Production','Dispatch','Final'],datasets:[{label:'Collected',data:[52,17,28,8,0],backgroundColor:'#002060',borderRadius:[0,0,0,0],stack:'a'},{label:'Outstanding',data:[0,0,24,27,17],backgroundColor:'#ef9a9a',borderRadius:[2,2,0,0],stack:'a'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>'₹'+v+'L'},grid:{color:'rgba(0,0,0,0.04)'}}}}});
+}
+
+// ── ORDERS TABLE ───────────────────────────────────────────────
+let orderPage=1;
+function renderOrders(){
+  const search=document.getElementById('order-search').value.toLowerCase();
+  const statusF=document.getElementById('order-status-f').value;
+  const zoneF=document.getElementById('order-zone-f').value;
+  const prodF=document.getElementById('order-prod-f').value;
+  let data=[...ORDERS];
+  if(search)data=data.filter(o=>o.sno.toLowerCase().includes(search)||o.customer.toLowerCase().includes(search)||o.partner.toLowerCase().includes(search)||o.zm.toLowerCase().includes(search)||o.salesPerson.toLowerCase().includes(search));
+  if(statusF)data=data.filter(o=>o.status===statusF);
+  if(zoneF)data=data.filter(o=>o.zone===zoneF);
+  if(prodF)data=data.filter(o=>o.product===prodF);
+  const PER=10, total=Math.ceil(data.length/PER);
+  if(orderPage>total)orderPage=1;
+  const page=data.slice((orderPage-1)*PER,orderPage*PER);
+  document.getElementById('order-count-sub').textContent=data.length+' orders · Updated just now';
+  document.getElementById('order-pager-info').textContent='Showing '+(((orderPage-1)*PER)+1)+'–'+Math.min(orderPage*PER,data.length)+' of '+data.length;
+  document.getElementById('orders-table').innerHTML=page.map(o=>`
+    <tr onclick="openOrderDetail(${o.id})">
+      <td style="color:var(--text3)">${o.id}</td><td>${o.date}</td>
+      <td style="font-weight:700;color:var(--navy)">${o.sno}</td>
+      <td>${o.partner}</td><td style="font-weight:600">${o.customer}</td>
+      <td>${o.product}</td><td><span class="zone-badge">${o.zone}</span></td>
+      <td style="font-size:10px">${o.zm}</td><td style="font-size:10px">${o.salesPerson}</td>
+      <td>${o.qty}</td><td style="font-weight:700">₹${(o.basicValue/100000).toFixed(1)}L</td>
+      <td><span class="badge ${STATUS_BADGE_MAP[o.status]||'b-enq'}">${o.status}</span></td>
+      <td><span class="badge ${PAY_BADGE_MAP[o.payStatus]||'b-pending'}">${o.payStatus}</span></td>
+    </tr>`).join('');
+  const pg=document.getElementById('order-pagination');
+  pg.innerHTML=`<button class="pg-btn" ${orderPage===1?'disabled':''} onclick="orderPage--;renderOrders()">‹</button>`
+    +[...Array(total)].map((_,i)=>`<button class="pg-btn ${orderPage===i+1?'active':''}" onclick="orderPage=${i+1};renderOrders()">${i+1}</button>`).join('')
+    +`<button class="pg-btn" ${orderPage===total||!total?'disabled':''} onclick="orderPage++;renderOrders()">›</button>`;
+}
+
+// ── ORDER DETAIL ───────────────────────────────────────────────
+function openOrderDetail(id){
+  const o=ORDERS.find(x=>x.id===id);
+  if(!o)return;
+  const stageIdx=STATUS_IDX[o.status]??0;
+  const pct=Math.round(((stageIdx+1)/9)*100);
+  document.getElementById('od-title').textContent=o.sno;
+  document.getElementById('od-sub').textContent=o.customer+' · '+o.partner;
+  document.getElementById('od-badges').innerHTML=`<span class="badge ${PAY_BADGE_MAP[o.payStatus]||'b-pending'}">${o.payStatus}</span> <span class="badge ${STATUS_BADGE_MAP[o.status]||'b-enq'}">${o.status}</span>`;
+  document.getElementById('od-progress').style.width=pct+'%';
+  document.getElementById('od-pct').textContent=pct+'% complete';
+  const tl=document.getElementById('od-timeline');
+  tl.innerHTML=STAGES.map((s,i)=>{
+    const done=i<stageIdx,active=i===stageIdx;
+    const cls=done?'t-dot-done':active?'t-dot-active':'t-dot-pend';
+    const ico=done?'✓':active?'●':(i+1);
+    const lineCls=i<stageIdx?'t-line-done':'t-line-pend';
+    return `<div style="display:flex;align-items:flex-start">`
+      +`<div class="t-node"><div class="${cls}">${ico}</div><div class="t-label">${s}</div></div>`
+      +(i<STAGES.length-1?`<div class="${lineCls}"></div>`:'')
+      +`</div>`;
+  }).join('');
+  const dr=(l,v)=>`<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-val">${v||'—'}</span></div>`;
+  document.getElementById('od-sales').innerHTML=dr('ZM',o.zm)+dr('RSM',o.rsm)+dr('DSE',o.salesPerson)+dr('Zone',o.zone)+dr('Partner',o.partner)+dr('Date',o.date)+dr('Quotation',o.quotNo);
+  document.getElementById('od-order').innerHTML=dr('Customer',o.customer)+dr('Product',o.product)+dr('Category',o.category)+dr('Color',o.color)+dr('Qty',o.qty)+dr('Basic Value','₹'+o.basicValue?.toLocaleString('en-IN'))+dr('Install By',o.installBy)+dr('Location',o.location)+dr('Invoice',o.invoiceNo)+dr('SO Date',o.soDate);
+  document.getElementById('od-payment').innerHTML=dr('Advance %',o.advPct+'%')+dr('Advance Amount','₹'+(o.advAmt||0).toLocaleString('en-IN'))+dr('Txn / UTR',o.advTxn)+dr('Date Received',o.advDate)+dr('Survey Date',o.surveyDate)+dr('Dispatch Date',o.dispatchDate)+dr('Install Start',o.installStart)+dr('Install End',o.installEnd)+dr('Handover',o.handover)+(o.remarks?dr('Remarks',o.remarks):'');
+  goTo('order-detail');
+}
+
+// ── PUNCH ORDER ────────────────────────────────────────────────
+let currentStep=0;
+const STEP_LABELS=['Sales Info','Order Details','Payment','Logistics','Review'];
+const formData={zm:'',rsm:'',month:'June',quarter:'Q2',year:'2025',salesPerson:'',zone:'',enquirySource:'',date:'',quotNo:'',partner:'',custCode:'',customer:'',product:'',category:'',itemType:'',color:'',qty:'',basicValue:'',address:'',location:'',advPct:'30',advAmt:'',advTxn:'',advDate:'',surveyPct:'10',despatchPct:'20',installBy:'',soSapNo:'',invoiceNo:'',tentativeSurveyDate:'',expectedDispatchDate:'',expectedInstallDate:'',remarks:'',finalRemarks:''};
+
+function renderStepBar(){
+  document.getElementById('step-bar').innerHTML=STEP_LABELS.map((l,i)=>{
+    const cls=i<currentStep?'sc-done':i===currentStep?'sc-active':'sc-pend';
+    const line=i<STEP_LABELS.length-1?`<div class="step-line ${i<currentStep?'sl-done':'sl-pend'}"></div>`:'';
+    return `<div class="step-node"><div class="step-circle ${cls}">${i<currentStep?'✓':i+1}</div><div class="step-label">${l}</div></div>${line}`;
+  }).join('');
+}
+
+const ZMs=['Rajesh Kumar','Priya Nair','Suresh Patel','Anita Roy'];
+const DSEs=['Amit Sharma','Neha Singh','Ravi Kumar','Vijay Pillai','Pooja Mehta','Sanjay Rao','Deepak Kumar','Rohit Jain','Kavita Shah','Manish Verma'];
+const sel=(name,opts,val)=>`<select class="form-select" name="${name}" onchange="formData['${name}']=this.value">${opts.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+const inp=(name,type,ph,val)=>`<input class="form-input" type="${type||'text'}" name="${name}" placeholder="${ph||''}" value="${val||''}" onchange="formData['${name}']=this.value" oninput="formData['${name}']=this.value"/>`;
+const field=(label,html)=>`<div class="form-group"><label class="form-label">${label}</label>${html}</div>`;
+
+function renderStepContent(){
+  const c=document.getElementById('step-content');
+  if(currentStep===0){
+    c.innerHTML=`<div class="card"><div class="card-title">👤 Sales Information</div><div class="form-grid">
+      ${field('ZM *',sel('zm',['Select ZM',...ZMs],formData.zm))}
+      ${field('RSM',inp('rsm','text','RSM name',formData.rsm))}
+      ${field('DSE *',sel('salesPerson',['Select DSE',...DSEs],formData.salesPerson))}
+      ${field('Zone *',sel('zone',['Select Zone','North','South','East','West'],formData.zone))}
+      ${field('Month',sel('month',['January','February','March','April','May','June','July','August','September','October','November','December'],formData.month))}
+      ${field('Quarter',sel('quarter',['Q1','Q2','Q3','Q4'],formData.quarter))}
+      ${field('Date of Order *',inp('date','date','',formData.date))}
+      ${field('Enquiry Source',sel('enquirySource',['Select Source','Ozone','Partner'],formData.enquirySource))}
+      ${field('Quotation Number',inp('quotNo','text','QN-2025-XXXX',formData.quotNo))}
+    </div></div>`;
+  } else if(currentStep===1){
+    c.innerHTML=`<div class="card"><div class="card-title">📦 Order Details</div><div class="form-grid">
+      ${field('Ozo Blu Partner (SAP) *',inp('partner','text','Partner name as per SAP',formData.partner))}
+      ${field('Customer Code',inp('custCode','text','C001',formData.custCode))}
+      ${field('Customer Name (Ship To) *',inp('customer','text','Site / customer name',formData.customer))}
+      ${field('Product *',sel('product',['Select Product','Doors','Windows','Mesh','Partition','Railing'],formData.product))}
+      ${field('Category *',sel('category',['Select Category','Kit','Customised','Standard'],formData.category))}
+      ${field('Color',sel('color',['Select Color','White','Brown','Grey','Black','Beige','Ivory','Champagne'],formData.color))}
+      ${field('Total Qty *',inp('qty','number','0',formData.qty))}
+      ${field('Basic Order Value (₹) *',`<input class="form-input" type="number" name="basicValue" placeholder="0" value="${formData.basicValue||''}" oninput="formData.basicValue=this.value;document.getElementById('val-lakhs').textContent=(this.value?(parseFloat(this.value)/100000).toFixed(2)+' L':'—')"/>`)}
+      ${field('Value in Lakhs (auto)',`<input class="form-input" style="background:var(--gray1)" readonly id="val-lakhs" value="${formData.basicValue?(parseFloat(formData.basicValue)/100000).toFixed(2)+' L':'—'}"/>`)}
+    </div>
+    <div class="form-grid-2">
+      ${field('Address',`<textarea class="form-input" rows="2" onchange="formData.address=this.value">${formData.address}</textarea>`)}
+      ${field('Location',inp('location','text','City / site',formData.location))}
+    </div></div>`;
+  } else if(currentStep===2){
+    c.innerHTML=`<div class="card"><div class="card-title">💳 Payment Details</div>
+      <div style="margin-bottom:12px;padding:10px;background:var(--blue-l);border-radius:7px;font-size:11px;color:var(--navy)">Standard payment: Advance 30% · Survey 10% · Dispatch 20% · Final 10%</div>
+      <div class="form-grid">
+        ${field('Advance % (default 30)',inp('advPct','number','30',formData.advPct))}
+        ${field('Advance Amount (₹)',inp('advAmt','number','0',formData.advAmt))}
+        ${field('Transaction / UTR ID',inp('advTxn','text','UTR / Ref No.',formData.advTxn))}
+        ${field('Date Received',inp('advDate','date','',formData.advDate))}
+        ${field('Survey Stage %',inp('surveyPct','number','10',formData.surveyPct))}
+        ${field('Dispatch Stage %',inp('despatchPct','number','20',formData.despatchPct))}
+      </div></div>`;
+  } else if(currentStep===3){
+    c.innerHTML=`<div class="card"><div class="card-title">🚚 Logistics & Installation</div><div class="form-grid">
+      ${field('Installation By',sel('installBy',['Select','Ozone','Partner','Customer'],formData.installBy))}
+      ${field('SAP SO Number',inp('soSapNo','text','SAP-XXX',formData.soSapNo))}
+      ${field('Invoice Number',inp('invoiceNo','text','INV-XXX',formData.invoiceNo))}
+      ${field('Tentative Survey Date',inp('tentativeSurveyDate','date','',formData.tentativeSurveyDate))}
+      ${field('Expected Dispatch Date',inp('expectedDispatchDate','date','',formData.expectedDispatchDate))}
+      ${field('Expected Install Date',inp('expectedInstallDate','date','',formData.expectedInstallDate))}
+    </div>
+    <div class="form-grid-2">
+      ${field('Remarks',`<textarea class="form-input" rows="2" onchange="formData.remarks=this.value">${formData.remarks}</textarea>`)}
+      ${field('Final Remarks',`<textarea class="form-input" rows="2" onchange="formData.finalRemarks=this.value">${formData.finalRemarks}</textarea>`)}
+    </div></div>`;
+  } else {
+    c.innerHTML=`<div class="card"><div class="card-title">✅ Review & Submit</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+        ${['Zone','ZM','DSE / Sales Person','Date of Order','Ozo Blu Partner','Customer Name','Product','Category','Color','Total Qty','Basic Value','Install By'].map((l,i)=>{const vals=[formData.zone,formData.zm,formData.salesPerson,formData.date,formData.partner,formData.customer,formData.product,formData.category,formData.color,formData.qty,formData.basicValue?'₹'+parseFloat(formData.basicValue).toLocaleString('en-IN'):'—',formData.installBy];return `<div style="background:var(--gray1);border-radius:7px;padding:8px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:600">${l}</div><div style="font-size:12px;font-weight:700;color:var(--text1);margin-top:2px">${vals[i]||'—'}</div></div>`;}).join('')}
+      </div>
+      <div style="padding:10px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:7px;font-size:11px;color:#2e7d32">✓ On submission, this order will be created and synced to your Google Sheet in real-time.</div>
+    </div>`;
+  }
+  document.getElementById('btn-prev').disabled=currentStep===0;
+  document.getElementById('btn-draft').style.display=currentStep===4?'flex':'flex';
+  document.getElementById('btn-next').style.display=currentStep===4?'none':'flex';
+  document.getElementById('btn-submit').style.display=currentStep===4?'flex':'none';
+}
+
+function nextStep(){if(currentStep<4){currentStep++;renderStepBar();renderStepContent();}}
+function prevStep(){if(currentStep>0){currentStep--;renderStepBar();renderStepContent();}}
+function resetForm(){currentStep=0;Object.keys(formData).forEach(k=>formData[k]='');formData.month='June';formData.quarter='Q2';formData.year='2025';formData.advPct='30';formData.surveyPct='10';formData.despatchPct='20';renderStepBar();renderStepContent();}
+function submitOrder(){
+  const newId=ORDERS.length+1;
+  ORDERS.push({id:newId,sno:'SO-2025-'+String(newId).padStart(3,'0'),date:formData.date||new Date().toISOString().slice(0,10),partner:formData.partner||'—',salesPerson:formData.salesPerson||'—',customer:formData.customer||'—',product:formData.product||'—',category:formData.category||'—',color:formData.color||'—',qty:parseInt(formData.qty)||0,basicValue:parseFloat(formData.basicValue)||0,installBy:formData.installBy||'—',location:formData.location||'—',zone:formData.zone||'—',zm:formData.zm||'—',rsm:formData.rsm||'—',quotNo:formData.quotNo||'—',invoiceNo:formData.invoiceNo||'—',soDate:'',status:'Won',payStatus:'Pending',advPct:parseInt(formData.advPct)||30,advAmt:parseFloat(formData.advAmt)||0,advTxn:formData.advTxn||'—',advDate:formData.advDate||'—',surveyDate:'',dispatchDate:'',installStart:'',installEnd:'',handover:'',remarks:formData.remarks||''});
+  alert('✅ Order created successfully!\n\n'+ORDERS[ORDERS.length-1].sno+' synced to Google Sheets.');
+  resetForm();goTo('orders');
+}
+
+// ── PARTNERS ──────────────────────────────────────────────────
+function renderPartners(){
+  const s=document.getElementById('partner-search').value.toLowerCase();
+  const z=document.getElementById('partner-zone').value;
+  const sortK=document.getElementById('partner-sort').value;
+  let data=[...PARTNERS];
+  if(s)data=data.filter(p=>p.name.toLowerCase().includes(s)||p.state.toLowerCase().includes(s));
+  if(z)data=data.filter(p=>p.zone===z);
+  data.sort((a,b)=>(b[sortK]||0)-(a[sortK]||0));
+  document.getElementById('partners-table').innerHTML=data.map(p=>`
+    <tr>
+      <td style="font-weight:700;color:var(--navy)">${p.name}</td>
+      <td><span class="zone-badge">${p.zone}</span></td>
+      <td style="font-size:10px">${p.zm}</td>
+      <td style="font-size:10px">${p.state}</td>
+      <td>${p.enqQty}</td>
+      <td style="font-weight:600">${p.orderQty}</td>
+      <td style="font-weight:700;color:var(--navy)">₹${p.orderVal}L</td>
+      <td style="color:var(--red)">${p.lostQty}</td>
+      <td>
+        <span style="font-weight:700;color:${p.winRate>=70?'var(--green)':p.winRate>=60?'var(--amber)':'var(--red)'}">${p.winRate}%</span>
+        <div style="width:60px;height:4px;background:var(--gray2);border-radius:4px;margin-top:3px"><div style="height:100%;width:${p.winRate}%;background:${p.winRate>=70?'var(--green)':'var(--gold)'};border-radius:4px"></div></div>
+      </td>
+      <td style="${p.pendingPay>50?'color:var(--red);font-weight:700':''}">₹${p.pendingPay}L</td>
+      <td><span class="badge b-${p.status}">${p.status}</span></td>
+    </tr>`).join('');
+}
+
+// ── LIFECYCLE ─────────────────────────────────────────────────
+function renderLifecycle(){
+  const s=document.getElementById('lc-search').value.toLowerCase();
+  const stF=document.getElementById('lc-stage').value;
+  let data=ORDERS.filter(o=>o.status!=='Lost');
+  if(s)data=data.filter(o=>o.sno.toLowerCase().includes(s)||o.customer.toLowerCase().includes(s));
+  if(stF)data=data.filter(o=>o.status===stF);
+  const el=document.getElementById('lifecycle-list');
+  el.innerHTML=data.map(o=>{
+    const si=STATUS_IDX[o.status]??0;
+    const pct=Math.round(((si+1)/9)*100);
+    const tl=STAGES.map((s,i)=>{
+      const done=i<si,active=i===si;
+      const cls=done?'t-dot-done':active?'t-dot-active':'t-dot-pend';
+      const lc=i<si?'t-line-done':'t-line-pend';
+      return `<div style="display:flex;align-items:flex-start"><div class="t-node"><div class="${cls}" style="width:20px;height:20px;font-size:9px">${done?'✓':active?'●':i+1}</div><div class="t-label" style="font-size:8px;min-width:50px">${s}</div></div>${i<STAGES.length-1?`<div class="${lc}" style="min-width:10px"></div>`:''}</div>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="openOrderDetail(${o.id})">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;color:var(--navy)">${o.sno}</span><span style="color:var(--text3)">·</span><span>${o.customer}</span><span style="color:var(--text3)">·</span><span style="font-size:11px;color:var(--text3)">${o.partner}</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;color:var(--navy)">₹${(o.basicValue/100000).toFixed(1)}L</span><span style="font-size:10px;padding:2px 8px;background:var(--blue-l);color:var(--navy);border-radius:10px;font-weight:600">${pct}% done</span></div>
+      </div>
+      <div class="timeline">${tl}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── FUNNEL ────────────────────────────────────────────────────
+const FUNNEL_DATA=[
+  {stage:'Enquiry',count:482,value:380,color:'#002060',pct:100},{stage:'Quote',count:341,value:290,color:'#1565c0',pct:71},
+  {stage:'Approved',count:260,value:230,color:'#1976D2',pct:54},{stage:'Survey',count:218,value:190,color:'#1E88E5',pct:45},
+  {stage:'Production',count:186,value:170,color:'#42A5F5',pct:39},{stage:'Dispatch',count:162,value:150,color:'#5E97F6',pct:34},
+  {stage:'Install',count:134,value:120,color:'#90CAF9',pct:28},{stage:'Handover',count:112,value:110,color:'#BBDEFB',pct:23},
+  {stage:'Complete',count:91,value:90,color:'#E3F2FD',pct:19},
+];
+
+function renderFunnel(){
+  const bars=document.getElementById('funnel-bars');
+  const labels=document.getElementById('funnel-labels');
+  bars.innerHTML=FUNNEL_DATA.map(f=>`<div class="funnel-bar" style="height:${Math.max(16,f.pct/100*160)}px;background:${f.color}"><span style="font-size:11px;font-weight:700;color:${f.pct>40?'white':'#333'}">${f.count}</span></div>`).join('');
+  labels.innerHTML=FUNNEL_DATA.map(f=>`<div style="text-align:center"><div style="font-size:9px;color:var(--text3)">${f.stage}</div><div style="font-size:9px;font-weight:700;color:var(--navy)">${f.pct}%</div><div style="font-size:9px;color:var(--text3)">₹${f.value}L</div></div>`).join('');
+  setTimeout(()=>{
+    const convRates=[{s:'Enq→Quote',r:71},{s:'Quote→App',r:76},{s:'App→Survey',r:84},{s:'Survey→Prod',r:85},{s:'Prod→Disp',r:87},{s:'Disp→Inst',r:83},{s:'Inst→Comp',r:68}];
+    const aging=[{s:'Enq→Q',d:3},{s:'Q→App',d:5},{s:'App→Sur',d:4},{s:'Sur→Prod',d:8},{s:'Prod→Dis',d:14},{s:'Dis→Ins',d:6},{s:'Ins→Comp',d:12}];
+    if(!Chart.getChart(document.getElementById('chart-conv-rates')))new Chart(document.getElementById('chart-conv-rates'),{type:'bar',data:{labels:convRates.map(r=>r.s),datasets:[{label:'Conv %',data:convRates.map(r=>r.r),backgroundColor:convRates.map(r=>r.r>=80?'#002060':r.r>=70?'#378ADD':'#FFC000'),borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{max:100,ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:9}}}}}});
+    if(!Chart.getChart(document.getElementById('chart-aging')))new Chart(document.getElementById('chart-aging'),{type:'bar',data:{labels:aging.map(r=>r.s),datasets:[{label:'Avg Days',data:aging.map(r=>r.d),backgroundColor:'#FFC000',borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}},grid:{display:false}},y:{ticks:{font:{size:10}}}}}});
+  },100);
+}
+
+// ── AI CHAT ───────────────────────────────────────────────────
+const AI_KB={
+  'top partner':`📊 **Top Partners — June 2025**\n\n1. ABC Interiors · ₹42L · 74% win rate · North Zone\n2. XYZ Facades · ₹36L · 67% win rate · South Zone\n3. Metro Build · ₹29L · 65% win rate · West Zone\n\nABC Interiors is outperforming all peers by 16% this month.`,
+  'revenue':`🗺️ **Revenue by State — June 2025**\n\n1. Delhi — ₹42L (North Zone)\n2. Karnataka — ₹36L (South Zone)\n3. Maharashtra — ₹29L (West Zone)\n4. West Bengal — ₹22L (East Zone)\n\nDelhi contributes 32% of total monthly revenue.`,
+  'risk':`⚠️ **3 Orders Flagged at Risk**\n\n• SO-2025-005 (Lakewood Villas) — Survey pending >7 days\n• SO-2025-003 (Imperial Heights) — Dispatch delayed 3 days\n• SO-2025-009 (Blue Bay) — Payment pending before dispatch`,
+  'conversion':`📉 **Conversion Analysis — June 2025**\n\nOverall rate: 58% (enquiry to order)\n\nWeek-on-week drop of 4.2%:\n• 3 large enquiries lost to competitor pricing in South zone\n• Survey team backlog causing >7 day delays\n• 2 quotations expired without follow-up`,
+  'overdue':`💰 **Overdue Payments — ₹11L Total**\n\n• Apex Glazing — ₹4.2L (32 days overdue — CRITICAL)\n• City Glazing — ₹3.6L (18 days overdue)\n• Vista Glass — ₹3.2L (14 days overdue)\n\nEscalate Apex Glazing immediately to ZM Priya Nair.`,
+  'forecast':`🔮 **July 2025 Revenue Forecast**\n\nPredicted Revenue: ₹34–38 Lakhs\nExpected New Orders: 22–26\nWin Probability: 72%\nConfidence Level: 78%`,
+  'zone':`🌍 **Zone Performance Summary**\n\nNorth: ₹42L · 58 orders · 68% win\nSouth: ₹36L · 48 orders · 64% win\nWest: ₹28L · 38 orders · 61% win\nEast: ₹22L · 30 orders · 59% win\n\nNorth zone leading. East zone needs attention.`,
+  'dispatch':`🚚 **47 Orders Pending Dispatch**\n\nNorth: 18 orders · ₹16L\nSouth: 12 orders · ₹11L\nWest: 10 orders · ₹9L\nEast: 7 orders · ₹6L\n\nTop bottleneck: Production confirmation pending in SAP for 8 orders.`,
 };
 
-// ─── MOCK DATA ENGINE (column-accurate, no real PII) ─────────────────────────
-const ZONES = ["North", "South", "East", "West", "Central"];
-const ZMS = ["Rajesh Kumar", "Priya Sharma", "Amit Singh", "Nisha Patel", "Vikram Rao"];
-const RSMS = ["Suresh Nair", "Deepika Menon", "Rahul Gupta", "Anjali Iyer", "Karan Mehta"];
-const SALES = ["Anil Verma", "Sunita Das", "Manoj Tiwari", "Pooja Joshi", "Rohit Batra", "Neha Kapoor", "Sanjay Yadav", "Kavita Singh"];
-const PARTNERS = ["Ace Windows Pvt Ltd", "BuildRight Solutions", "Premier Glazing Co", "Elite Fenestra", "Pinnacle Profiles", "Classic Frames Ltd", "Urban Windows", "NextGen Facades"];
-const PRODUCTS = ["Aluminium Doors & Windows", "UPVC Windows"];
-const STATUSES = ["Done", "In Progress", "Survey", "Production", "Dispatch", "Installation", "Pending"];
-const CATEGORIES = ["Residential", "Commercial", "Industrial"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const STATES = ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Gujarat", "Rajasthan", "UP", "Haryana", "Punjab", "Telangana"];
+let chatInit=false;
+function initChat(){
+  if(chatInit)return; chatInit=true;
+  const msgs=document.getElementById('chat-msgs');
+  msgs.innerHTML='';
+  addMsg('bot',`👋 Hello! I'm the **Ozone AI Business Assistant**.\n\nI have real-time access to your orders, partners, payments, and pipeline analytics.\n\nAsk me anything — try a quick query button above!`);
+}
 
-function randInt(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
-function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
-function fmtDate(d) { return d.toISOString().slice(0, 10); }
-
-function generateOrders(n = 120) {
-  const orders = [];
-  const now = new Date(2025, 4, 1);
-  for (let i = 1; i <= n; i++) {
-    const zone = pick(ZONES);
-    const zoneIdx = ZONES.indexOf(zone);
-    const product = pick(PRODUCTS);
-    const status = pick(STATUSES);
-    const qty = randInt(4, 80);
-    const bov = randInt(150000, 4500000);
-    const adv = Math.round(bov * 0.3);
-    const survey = Math.round(bov * 0.2);
-    const despatch = Math.round(bov * 0.4);
-    const tov = Math.round(bov * 1.18);
-    const orderDate = new Date(2024, randInt(0, 11), randInt(1, 28));
-    orders.push({
-      sno: i,
-      zm: ZMS[zoneIdx],
-      rsm: RSMS[zoneIdx],
-      month: MONTHS[orderDate.getMonth()],
-      quarter: `Q${Math.floor(orderDate.getMonth() / 3) + 1}`,
-      year: orderDate.getFullYear(),
-      status,
-      product,
-      category: pick(CATEGORIES),
-      dateOfOrder: fmtDate(orderDate),
-      partner: pick(PARTNERS),
-      salesPerson: pick(SALES),
-      customer: `Customer ${String(i).padStart(3, "0")}`,
-      totalQty: qty,
-      basicOrderValue: bov,
-      totalOrderValue: tov,
-      zone,
-      state: pick(STATES),
-      quotationNumber: `OZ-QT-${2025}-${String(i).padStart(4, "0")}`,
-      soNumber: status === "Done" ? `SO-${String(i).padStart(5, "0")}` : "",
-      advance: adv,
-      survey,
-      despatch,
-    });
+function addMsg(role,text){
+  const msgs=document.getElementById('chat-msgs');
+  const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const formatted=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');
+  if(role==='bot'){
+    msgs.innerHTML+=`<div class="msg-bot"><div class="msg-avatar">🤖</div><div><div class="msg-bubble-bot">${formatted}</div><div class="msg-time">${t}</div></div></div>`;
+  } else {
+    msgs.innerHTML+=`<div class="msg-user"><div class="msg-avatar" style="background:var(--gold);color:var(--navy)">U</div><div style="text-align:right"><div class="msg-bubble-user">${text}</div><div class="msg-time">${t}</div></div></div>`;
   }
-  return orders;
+  msgs.scrollTop=msgs.scrollHeight;
 }
 
-const ALL_ORDERS = generateOrders(120);
-
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
-function fmt(n) {
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)}Cr`;
-  if (n >= 100000) return `₹${(n / 100000).toFixed(2)}L`;
-  return `₹${n.toLocaleString("en-IN")}`;
-}
-function fmtN(n) { return n.toLocaleString("en-IN"); }
-function pct(a, b) { return b === 0 ? "0%" : `${((a / b) * 100).toFixed(1)}%`; }
-
-// ─── COMPONENTS ───────────────────────────────────────────────────────────────
-
-// Login Screen
-function LoginScreen({ onLogin }) {
-  const [user, setUser] = useState("");
-  const [pass, setPass] = useState("");
-  const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!user || !pass) { setErr("Please enter both username and password."); return; }
-    setLoading(true);
-    setTimeout(() => {
-      if (user === "admin" && pass === "ozone123") {
-        onLogin({ name: "Admin User", role: "Administrator" });
-      } else if (user === "manager" && pass === "ozone123") {
-        onLogin({ name: "Regional Manager", role: "Manager" });
-      } else {
-        setErr("Invalid credentials. Try admin / ozone123");
-        setLoading(false);
-      }
-    }, 800);
-  }
-
-  return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${OZ.navyDark} 0%, ${OZ.navy} 60%, ${OZ.navyLight} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, -apple-system, sans-serif", padding: "2rem" }}>
-      <div style={{ width: "100%", maxWidth: 420 }}>
-        {/* Logo area */}
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)", borderRadius: 16, padding: "14px 28px", border: "1px solid rgba(255,255,255,0.15)" }}>
-            <OzoneLogo size={44} />
-            <div style={{ textAlign: "left" }}>
-              <div style={{ color: OZ.white, fontSize: 22, fontWeight: 700, letterSpacing: "-0.5px" }}>OZONE</div>
-              <div style={{ color: OZ.cyanLight, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", fontWeight: 500 }}>India · Enterprise Platform</div>
-            </div>
-          </div>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 16 }}>Order Tracker & Business Intelligence</p>
-        </div>
-        {/* Card */}
-        <div style={{ background: "rgba(255,255,255,0.97)", borderRadius: 20, padding: "2.5rem", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
-          <h2 style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 700, color: OZ.text }}>Sign in to your account</h2>
-          <p style={{ margin: "0 0 28px", fontSize: 13, color: OZ.textMuted }}>Secure access to your business intelligence dashboard</p>
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: OZ.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Username</label>
-              <input value={user} onChange={e => { setUser(e.target.value); setErr(""); }} placeholder="Enter username" style={{ width: "100%", padding: "11px 14px", border: `1px solid ${err ? OZ.red : "#dde5ef"}`, borderRadius: 10, fontSize: 14, color: OZ.text, outline: "none", boxSizing: "border-box", background: "#fafbfc" }} />
-            </div>
-            <div style={{ marginBottom: 8 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: OZ.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Password</label>
-              <input type="password" value={pass} onChange={e => { setPass(e.target.value); setErr(""); }} placeholder="Enter password" style={{ width: "100%", padding: "11px 14px", border: `1px solid ${err ? OZ.red : "#dde5ef"}`, borderRadius: 10, fontSize: 14, color: OZ.text, outline: "none", boxSizing: "border-box", background: "#fafbfc" }} />
-            </div>
-            {err && <p style={{ color: OZ.red, fontSize: 12, marginBottom: 12, marginTop: 4 }}>{err}</p>}
-            <button type="submit" disabled={loading} style={{ width: "100%", padding: "13px", background: loading ? "#8fa8cc" : OZ.navy, color: OZ.white, border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: loading ? "default" : "pointer", marginTop: 12, letterSpacing: "0.02em", transition: "background 0.2s" }}>
-              {loading ? "Signing in…" : "Sign In"}
-            </button>
-          </form>
-          <p style={{ textAlign: "center", fontSize: 12, color: OZ.textLight, marginTop: 20, marginBottom: 0 }}>Demo: <strong>admin</strong> / <strong>ozone123</strong></p>
-        </div>
-        <p style={{ textAlign: "center", color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 20 }}>© 2025 Ozone Overseas Pvt Ltd. All rights reserved.</p>
-      </div>
-    </div>
-  );
+function addTyping(){
+  const msgs=document.getElementById('chat-msgs');
+  msgs.innerHTML+=`<div class="msg-bot" id="typing-ind"><div class="msg-avatar">🤖</div><div class="msg-bubble-bot"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>`;
+  msgs.scrollTop=msgs.scrollHeight;
 }
 
-// Ozone Logo SVG
-function OzoneLogo({ size = 32 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-      <circle cx="50" cy="50" r="48" fill={OZ.navy} />
-      <circle cx="50" cy="50" r="30" fill="none" stroke={OZ.white} strokeWidth="6" />
-      <circle cx="35" cy="50" r="12" fill={OZ.cyan} />
-      <path d="M55 30 Q80 50 55 70" stroke={OZ.white} strokeWidth="5" fill="none" strokeLinecap="round" />
-    </svg>
-  );
+function matchResp(q){
+  const ql=q.toLowerCase();
+  for(const [key,resp] of Object.entries(AI_KB)){if(ql.includes(key))return resp;}
+  return `Based on your current data for **"${q}"**:\n\nPipeline: 198 won orders · ₹4.2 Cr active · 76% collection efficiency\n\nNorth zone leads at ₹42L. ABC Interiors is your top partner at 74% win rate.\n\nWould you like to drill down into a specific area?`;
 }
 
-// Sidebar
-function Sidebar({ active, setActive, collapsed, setCollapsed, user, onLogout }) {
-  const nav = [
-    { id: "dashboard", icon: "⊡", label: "Executive Dashboard" },
-    { id: "orders", icon: "📋", label: "Order Management" },
-    { id: "analytics", icon: "📊", label: "Analytics & Reports" },
-    { id: "partners", icon: "🤝", label: "Partner Performance" },
-    { id: "payments", icon: "💳", label: "Payment Tracker" },
-    { id: "funnel", icon: "⟁", label: "Sales Funnel" },
+function sendQ(q){addMsg('user',q);addTyping();setTimeout(()=>{document.getElementById('typing-ind')?.remove();addMsg('bot',matchResp(q));},900+Math.random()*600);}
+function sendMsg(){const i=document.getElementById('chat-input');if(!i.value.trim())return;sendQ(i.value.trim());i.value='';}
+
+// ── REPORTS ───────────────────────────────────────────────────
+function renderReports(){
+  const rpts=[
+    {icon:'📋',title:'Order Summary',desc:'Complete order list with all 93 fields',color:'#002060',formats:['Excel','CSV','PDF']},
+    {icon:'🏢',title:'Partner Performance',desc:'Win rates, revenue, trend analysis',color:'#1976D2',formats:['Excel','CSV']},
+    {icon:'💳',title:'Collection Report',desc:'Payment stages, aging, overdue analysis',color:'#2e7d32',formats:['Excel','PDF']},
+    {icon:'📈',title:'Sales Performance',desc:'ZM/RSM/DSE rankings and targets',color:'#e65100',formats:['Excel']},
+    {icon:'🔽',title:'Funnel Report',desc:'Stage conversion and drop-off analysis',color:'#7b1fa2',formats:['Excel','PDF']},
+    {icon:'💹',title:'Revenue Report',desc:'Monthly/quarterly trends and forecast',color:'#c62828',formats:['Excel','PDF']},
+    {icon:'🚚',title:'Dispatch Report',desc:'Dispatch status, dates, and delays',color:'#00897b',formats:['Excel','CSV']},
+    {icon:'🔧',title:'Installation Report',desc:'Installation timelines, SLA tracking',color:'#5e35b1',formats:['Excel','PDF']},
   ];
-  const w = collapsed ? 64 : 220;
-  return (
-    <div style={{ width: w, minHeight: "100vh", background: OZ.navyDark, display: "flex", flexDirection: "column", transition: "width 0.2s", overflow: "hidden", flexShrink: 0 }}>
-      {/* Logo */}
-      <div style={{ padding: collapsed ? "18px 0" : "18px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10, justifyContent: collapsed ? "center" : "flex-start" }}>
-        <OzoneLogo size={28} />
-        {!collapsed && <div>
-          <div style={{ color: OZ.white, fontSize: 14, fontWeight: 700 }}>OZONE</div>
-          <div style={{ color: OZ.cyan, fontSize: 9, letterSpacing: 2 }}>INDIA · ENTERPRISE</div>
-        </div>}
+  document.getElementById('report-cards').innerHTML=rpts.map(r=>`
+    <div class="card" style="margin-bottom:0">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:36px;height:36px;border-radius:8px;background:${r.color}18;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${r.icon}</div>
+        <div><div style="font-size:12px;font-weight:700;color:var(--navy)">${r.title}</div><div style="font-size:10px;color:var(--text3)">${r.desc}</div></div>
       </div>
-      {/* Nav */}
-      <nav style={{ flex: 1, padding: "12px 0" }}>
-        {nav.map(n => (
-          <button key={n.id} onClick={() => setActive(n.id)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: collapsed ? "12px 0" : "12px 16px", justifyContent: collapsed ? "center" : "flex-start", background: active === n.id ? "rgba(0,180,216,0.15)" : "transparent", border: "none", borderLeft: active === n.id ? `3px solid ${OZ.cyan}` : "3px solid transparent", color: active === n.id ? OZ.cyan : "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 13, fontWeight: active === n.id ? 600 : 400, transition: "all 0.15s" }}>
-            <span style={{ fontSize: 16 }}>{n.icon}</span>
-            {!collapsed && <span>{n.label}</span>}
-          </button>
-        ))}
-      </nav>
-      {/* User */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: collapsed ? "12px 0" : "12px 16px" }}>
-        {!collapsed && <div style={{ marginBottom: 8 }}>
-          <div style={{ color: OZ.white, fontSize: 12, fontWeight: 600 }}>{user.name}</div>
-          <div style={{ color: OZ.textLight, fontSize: 11 }}>{user.role}</div>
-        </div>}
-        <button onClick={onLogout} style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 12, width: "100%", justifyContent: collapsed ? "center" : "flex-start" }}>
-          <span>⏻</span>{!collapsed && "Sign Out"}
-        </button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${r.formats.map(f=>`<button class="btn" onclick="this.textContent='⟳ Generating…';setTimeout(()=>this.textContent='⬇ ${f}',1500)" style="font-size:10px;padding:3px 8px;background:${f==='Excel'?'#e8f5e9':f==='CSV'?'#e3f2fd':'#ffebee'};color:${f==='Excel'?'#2e7d32':f==='CSV'?'#0d47a1':'#b71c1c'};border:1px solid ${f==='Excel'?'#a5d6a7':f==='CSV'?'#90caf9':'#ef9a9a'}">⬇ ${f}</button>`).join('')}
       </div>
-      <button onClick={() => setCollapsed(!collapsed)} style={{ padding: "10px", background: "rgba(255,255,255,0.05)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 14 }}>
-        {collapsed ? "▶" : "◀"}
-      </button>
-    </div>
-  );
+    </div>`).join('');
 }
 
-// ─── KPI CARD ────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, icon, accent, trend }) {
-  const colors = {
-    navy: { bg: "#e8eef7", icon: OZ.navy, text: OZ.navy },
-    green: { bg: "#d1fae5", icon: "#059669", text: "#065f46" },
-    amber: { bg: "#fef3c7", icon: "#d97706", text: "#92400e" },
-    red: { bg: "#fee2e2", icon: "#dc2626", text: "#991b1b" },
-    cyan: { bg: "#cffafe", icon: "#0891b2", text: "#164e63" },
-  };
-  const c = colors[accent] || colors.navy;
-  return (
-    <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8, borderTop: `3px solid ${c.icon}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: OZ.textMuted, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</span>
-        <span style={{ background: c.bg, color: c.icon, borderRadius: 6, padding: "4px 7px", fontSize: 14 }}>{icon}</span>
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: OZ.text, lineHeight: 1 }}>{value}</div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        {sub && <span style={{ fontSize: 11, color: OZ.textMuted }}>{sub}</span>}
-        {trend && <span style={{ fontSize: 11, color: trend > 0 ? OZ.green : OZ.red, fontWeight: 600 }}>{trend > 0 ? "▲" : "▼"} {Math.abs(trend)}%</span>}
-      </div>
-    </div>
-  );
+// ── SETTINGS column mapping ────────────────────────────────────
+const EXCEL_COLS=["ZM","RSM","Month","Quarter","Year","Working","Order Summary","Status","Product","S.No.","Weeks","Date of Order","Cust. Code","Ozo Blu Partner","Enquiry Source","Sales Person","Customer Name","Item Type","Product Name","Category","Color","Total Qty","Address","Pleated Mesh","Basic Order Value","Basic Value (Lakhs)","Advance","Survey","Despatch","Total Order Value","Installation By","Location","Zone","Quotation Number","Invoice No","MSC/Sales Quote","Adv Payment %","Adv Payment Amount","Transaction ID","Date Received","Technical Validation","Tech Val Date","Remarks","Adv Receipt Validation","Adv Receipt Amount","Adv Receipt Date","Mark as Won","WON Trigger","Site Survey Inform","Client Appointment","Tentative Survey Date","Final Survey Date","Site Visit Report","Survey Report","Final Revised Order","FG Code Request","SAP FG Code","SO Number","SO Date","Survey Payment %","Survey Payment Amount","Survey Payment TxnID","Survey Payment Date","Payment After Survey","Payment After Survey Amt","Payment After Survey Date","Production Order","Production Drawing","Factory Order Status","Partial Complete","Material Availability","Production Schedule","Expected Production Date","Remarks 1","Production SAP Confirm","Partner Follow Up","Dispatch Payment %","Dispatch Payment Amt","Dispatch Payment TxnID","Dispatch Payment Date","Pre Delivery Payment","Pre Delivery Amt","Pre Delivery Date","Despatch Clearance","Despatch Date","Partner Info","Site Receipt","Paid Reorder","FOC Reorder","Installation Start","Installation End","Audit","Handover","Final Remark"];
+function renderColMap(){
+  document.getElementById('col-map-list').innerHTML=EXCEL_COLS.slice(0,12).map((c,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gray1)"><span style="font-size:10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px">${c}</span><span style="font-size:10px;color:var(--green);font-weight:700;white-space:nowrap">Col ${String.fromCharCode(65+i)} ✓</span></div>`).join('')+`<div style="font-size:10px;color:var(--text3);padding:4px 0">… and ${EXCEL_COLS.length-12} more columns</div>`;
 }
 
-// ─── MINI BAR (inline sparkline) ─────────────────────────────────────────────
-function MiniBar({ data, color = OZ.navy }) {
-  const max = Math.max(...data);
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 32 }}>
-      {data.map((v, i) => (
-        <div key={i} style={{ flex: 1, background: color, opacity: 0.25 + 0.75 * (v / max), borderRadius: 2, height: `${(v / max) * 100}%`, minHeight: 2 }} />
-      ))}
-    </div>
-  );
-}
+function showNotif(){alert('📬 3 Notifications:\n\n⚠️ SO-2025-005 survey pending >7 days\n🔴 Apex Glazing ₹4.2L overdue 32 days\n⚠️ SO-2025-003 dispatch 3 days behind');}
 
-// ─── CHART: Bar Chart (Canvas-free SVG) ──────────────────────────────────────
-function BarChart({ data, color = OZ.navy, height = 160 }) {
-  const max = Math.max(...data.map(d => d.value));
-  const w = 640, h = height, pad = { t: 10, b: 30, l: 50, r: 10 };
-  const bw = (w - pad.l - pad.r) / data.length;
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height }} preserveAspectRatio="none">
-      {[0, 0.25, 0.5, 0.75, 1].map(f => {
-        const y = pad.t + (1 - f) * (h - pad.t - pad.b);
-        return (
-          <g key={f}>
-            <line x1={pad.l} x2={w - pad.r} y1={y} y2={y} stroke="#e5e7eb" strokeWidth="1" />
-            <text x={pad.l - 4} y={y + 4} fontSize="9" fill="#9ca3af" textAnchor="end">{fmt(max * f)}</text>
-          </g>
-        );
-      })}
-      {data.map((d, i) => {
-        const x = pad.l + i * bw + bw * 0.1;
-        const bh = ((d.value / max) * (h - pad.t - pad.b));
-        const y = pad.t + (h - pad.t - pad.b) - bh;
-        return (
-          <g key={i}>
-            <rect x={x} y={y} width={bw * 0.8} height={bh} fill={color} rx="2" opacity="0.85" />
-            <text x={x + bw * 0.4} y={h - 4} fontSize="9" fill="#6b7280" textAnchor="middle">{d.label}</text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-// Donut Chart
-function DonutChart({ data }) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  const colors = [OZ.navy, OZ.cyan, "#10b981", "#f59e0b", "#ef4444"];
-  let cumAngle = -Math.PI / 2;
-  const r = 60, cx = 80, cy = 80, ri = 38;
-  function arc(startA, endA) {
-    const x1 = cx + r * Math.cos(startA), y1 = cy + r * Math.sin(startA);
-    const x2 = cx + r * Math.cos(endA), y2 = cy + r * Math.sin(endA);
-    const xi1 = cx + ri * Math.cos(endA), yi1 = cy + ri * Math.sin(endA);
-    const xi2 = cx + ri * Math.cos(startA), yi2 = cy + ri * Math.sin(startA);
-    const large = endA - startA > Math.PI ? 1 : 0;
-    return `M${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} L${xi1},${yi1} A${ri},${ri} 0 ${large},0 ${xi2},${yi2} Z`;
-  }
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-      <svg viewBox="0 0 160 160" width="130" height="130">
-        {data.map((d, i) => {
-          const angle = (d.value / total) * 2 * Math.PI;
-          const path = arc(cumAngle, cumAngle + angle);
-          cumAngle += angle;
-          return <path key={i} d={path} fill={colors[i % colors.length]} />;
-        })}
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="11" fill={OZ.textMuted}>Total</text>
-        <text x={cx} y={cy + 10} textAnchor="middle" fontSize="14" fontWeight="700" fill={OZ.text}>{fmtN(total)}</text>
-      </svg>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {data.map((d, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2, background: colors[i % colors.length], flexShrink: 0 }} />
-            <span style={{ color: OZ.textMuted }}>{d.label}</span>
-            <span style={{ color: OZ.text, fontWeight: 600, marginLeft: "auto" }}>{pct(d.value, total)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── SEARCH BAR ──────────────────────────────────────────────────────────────
-function SearchBar({ value, onChange, placeholder }) {
-  return (
-    <div style={{ position: "relative", width: "100%" }}>
-      <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: OZ.textMuted, fontSize: 15 }}>🔍</span>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder || "Search orders, customers, partners..."} style={{ width: "100%", padding: "10px 14px 10px 38px", border: `1px solid ${OZ.silverDark}`, borderRadius: 10, fontSize: 13, color: OZ.text, outline: "none", boxSizing: "border-box", background: OZ.white }} />
-    </div>
-  );
-}
-
-// ─── FILTERS ─────────────────────────────────────────────────────────────────
-function FilterBar({ filters, setFilters }) {
-  const sel = (k, v) => ({ display: "inline-block", padding: "5px 10px", borderRadius: 6, border: `1px solid ${OZ.silverDark}`, fontSize: 12, color: OZ.text, background: OZ.white, cursor: "pointer", outline: "none" });
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-      <select style={sel()} value={filters.zone} onChange={e => setFilters(f => ({ ...f, zone: e.target.value }))}>
-        <option value="">All Zones</option>
-        {ZONES.map(z => <option key={z}>{z}</option>)}
-      </select>
-      <select style={sel()} value={filters.product} onChange={e => setFilters(f => ({ ...f, product: e.target.value }))}>
-        <option value="">All Products</option>
-        {PRODUCTS.map(p => <option key={p}>{p}</option>)}
-      </select>
-      <select style={sel()} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
-        <option value="">All Status</option>
-        {STATUSES.map(s => <option key={s}>{s}</option>)}
-      </select>
-      <select style={sel()} value={filters.month} onChange={e => setFilters(f => ({ ...f, month: e.target.value }))}>
-        <option value="">All Months</option>
-        {MONTHS.map(m => <option key={m}>{m}</option>)}
-      </select>
-      <select style={sel()} value={filters.salesPerson} onChange={e => setFilters(f => ({ ...f, salesPerson: e.target.value }))}>
-        <option value="">All Sales Persons</option>
-        {SALES.map(s => <option key={s}>{s}</option>)}
-      </select>
-      {Object.values(filters).some(Boolean) && (
-        <button onClick={() => setFilters({ zone: "", product: "", status: "", month: "", salesPerson: "" })} style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${OZ.red}`, background: "transparent", color: OZ.red, fontSize: 12, cursor: "pointer" }}>
-          ✕ Clear Filters
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ─── STATUS BADGE ─────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const colors = {
-    "Done": { bg: "#d1fae5", text: "#065f46" },
-    "In Progress": { bg: "#dbeafe", text: "#1e40af" },
-    "Survey": { bg: "#fef3c7", text: "#92400e" },
-    "Production": { bg: "#ede9fe", text: "#5b21b6" },
-    "Dispatch": { bg: "#cffafe", text: "#164e63" },
-    "Installation": { bg: "#fce7f3", text: "#9d174d" },
-    "Pending": { bg: "#fee2e2", text: "#991b1b" },
-  };
-  const c = colors[status] || { bg: "#f3f4f6", text: "#374151" };
-  return <span style={{ background: c.bg, color: c.text, borderRadius: 5, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>{status}</span>;
-}
-
-// ─── EXECUTIVE DASHBOARD ──────────────────────────────────────────────────────
-function Dashboard({ data }) {
-  const total = data.length;
-  const totalQty = data.reduce((s, o) => s + o.totalQty, 0);
-  const totalBOV = data.reduce((s, o) => s + o.basicOrderValue, 0);
-  const done = data.filter(o => o.status === "Done");
-  const pending = data.filter(o => o.status !== "Done");
-  const doneVal = done.reduce((s, o) => s + o.basicOrderValue, 0);
-  const pendingVal = pending.reduce((s, o) => s + o.basicOrderValue, 0);
-  const alQty = data.filter(o => o.product === "Aluminium Doors & Windows").reduce((s, o) => s + o.totalQty, 0);
-  const upvcQty = data.filter(o => o.product === "UPVC Windows").reduce((s, o) => s + o.totalQty, 0);
-
-  // By Zone
-  const byZone = ZONES.map(z => ({
-    label: z,
-    value: data.filter(o => o.zone === z).reduce((s, o) => s + o.basicOrderValue, 0)
-  })).sort((a, b) => b.value - a.value);
-
-  // By Month
-  const byMonth = MONTHS.map(m => ({
-    label: m,
-    value: data.filter(o => o.month === m).reduce((s, o) => s + o.basicOrderValue, 0)
-  }));
-
-  // By Product
-  const productData = PRODUCTS.map(p => ({
-    label: p === "Aluminium Doors & Windows" ? "Al. D&W" : "UPVC",
-    value: data.filter(o => o.product === p).reduce((s, o) => s + o.basicOrderValue, 0)
-  }));
-
-  // By Sales Person (top 6)
-  const bySales = SALES.map(s => ({
-    name: s,
-    orders: data.filter(o => o.salesPerson === s).length,
-    value: data.filter(o => o.salesPerson === s).reduce((s2, o) => s2 + o.basicOrderValue, 0)
-  })).sort((a, b) => b.value - a.value).slice(0, 6);
-
-  return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: OZ.text }}>Executive Dashboard</h2>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: OZ.textMuted }}>Business performance overview — as of {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
-      </div>
-
-      {/* KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
-        <KpiCard label="Total Orders" value={fmtN(total)} sub="All order records" icon="📋" accent="navy" trend={8.4} />
-        <KpiCard label="Total Window Qty" value={fmtN(totalQty)} sub="Units" icon="🪟" accent="cyan" trend={12.1} />
-        <KpiCard label="Total Order Value" value={fmt(totalBOV)} sub="Basic order value" icon="💰" accent="navy" trend={5.2} />
-        <KpiCard label="Completed Orders" value={fmtN(done.length)} sub={pct(done.length, total) + " completion"} icon="✅" accent="green" trend={3.7} />
-        <KpiCard label="Completed Value" value={fmt(doneVal)} sub="Collected" icon="🏆" accent="green" />
-        <KpiCard label="Pending Orders" value={fmtN(pending.length)} sub="Awaiting completion" icon="⏳" accent="amber" />
-        <KpiCard label="Pending Value" value={fmt(pendingVal)} sub="Outstanding" icon="⚠️" accent="amber" />
-        <KpiCard label="Aluminium Qty" value={fmtN(alQty)} sub="Aluminium D&W units" icon="🔩" accent="navy" />
-        <KpiCard label="UPVC Qty" value={fmtN(upvcQty)} sub="UPVC Window units" icon="🪟" accent="cyan" />
-      </div>
-
-      {/* Charts Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-        <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600, color: OZ.text }}>Monthly Revenue Trend</h3>
-          <BarChart data={byMonth} color={OZ.navy} height={160} />
-        </div>
-        <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600, color: OZ.text }}>Product Mix</h3>
-          <DonutChart data={productData} />
-          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <div style={{ background: OZ.silver, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: OZ.textMuted }}>Aluminium D&W</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: OZ.navy }}>{fmtN(alQty)}</div>
-              <div style={{ fontSize: 10, color: OZ.textMuted }}>units</div>
-            </div>
-            <div style={{ background: OZ.silver, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: OZ.textMuted }}>UPVC Windows</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: OZ.cyan }}>{fmtN(upvcQty)}</div>
-              <div style={{ fontSize: 10, color: OZ.textMuted }}>units</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Zone & Sales */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600, color: OZ.text }}>Zone Performance</h3>
-          {byZone.map((z, i) => {
-            const maxV = byZone[0].value;
-            return (
-              <div key={z.label} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                  <span style={{ color: OZ.text, fontWeight: 500 }}>{z.label}</span>
-                  <span style={{ color: OZ.textMuted }}>{fmt(z.value)}</span>
-                </div>
-                <div style={{ height: 6, background: OZ.silver, borderRadius: 3 }}>
-                  <div style={{ height: "100%", width: `${(z.value / maxV) * 100}%`, background: i === 0 ? OZ.navy : OZ.cyan, borderRadius: 3 }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600, color: OZ.text }}>Top Sales Performers</h3>
-          {bySales.map((s, i) => (
-            <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, paddingBottom: 10, borderBottom: i < bySales.length - 1 ? `1px solid ${OZ.silver}` : "none" }}>
-              <div style={{ width: 24, height: 24, borderRadius: "50%", background: i < 3 ? OZ.navy : OZ.silver, color: i < 3 ? OZ.white : OZ.textMuted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: OZ.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
-                <div style={{ fontSize: 11, color: OZ.textMuted }}>{s.orders} orders</div>
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: OZ.navy, textAlign: "right" }}>{fmt(s.value)}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── ORDER MANAGEMENT ─────────────────────────────────────────────────────────
-function OrderManagement({ data }) {
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({ zone: "", product: "", status: "", month: "", salesPerson: "" });
-  const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState(null);
-  const PER = 12;
-
-  const filtered = useMemo(() => {
-    return data.filter(o => {
-      if (filters.zone && o.zone !== filters.zone) return false;
-      if (filters.product && o.product !== filters.product) return false;
-      if (filters.status && o.status !== filters.status) return false;
-      if (filters.month && o.month !== filters.month) return false;
-      if (filters.salesPerson && o.salesPerson !== filters.salesPerson) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        return [o.customer, o.partner, o.salesPerson, o.quotationNumber, o.zone, o.product, String(o.sno)].some(v => v?.toLowerCase().includes(q));
-      }
-      return true;
-    });
-  }, [data, filters, search]);
-
-  const pages = Math.ceil(filtered.length / PER);
-  const pageData = filtered.slice((page - 1) * PER, page * PER);
-
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: OZ.text }}>Order Management</h2>
-        <p style={{ margin: 0, fontSize: 13, color: OZ.textMuted }}>{filtered.length} of {data.length} orders shown</p>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-        <SearchBar value={search} onChange={v => { setSearch(v); setPage(1); }} />
-        <FilterBar filters={filters} setFilters={f => { setFilters(f); setPage(1); }} />
-      </div>
-
-      {selected ? (
-        <OrderDetail order={selected} onBack={() => setSelected(null)} />
-      ) : (
-        <>
-          <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: OZ.silver }}>
-                    {["S.No.", "Date", "Quotation No.", "Customer", "Partner", "Zone", "Product", "Qty", "Basic Value", "Status", "Sales Person"].map(h => (
-                      <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: OZ.textMuted, whiteSpace: "nowrap", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${OZ.silverDark}` }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageData.map((o, i) => (
-                    <tr key={o.sno} onClick={() => setSelected(o)} style={{ background: i % 2 === 0 ? OZ.white : "#fafbfc", cursor: "pointer" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
-                      onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? OZ.white : "#fafbfc"}>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.navy, fontWeight: 600 }}>{o.sno}</td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.textMuted, whiteSpace: "nowrap" }}>{o.dateOfOrder}</td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.navy, fontFamily: "monospace", fontSize: 11 }}>{o.quotationNumber}</td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, fontWeight: 500, color: OZ.text, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.customer}</td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.textMuted, maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.partner}</td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}` }}><span style={{ background: "#e8eef7", color: OZ.navy, borderRadius: 4, padding: "2px 7px", fontWeight: 600, fontSize: 11 }}>{o.zone}</span></td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.textMuted, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.product}</td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, textAlign: "right", fontWeight: 600 }}>{fmtN(o.totalQty)}</td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, fontWeight: 700, color: OZ.navy, whiteSpace: "nowrap" }}>{fmt(o.basicOrderValue)}</td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}` }}><StatusBadge status={o.status} /></td>
-                      <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.textMuted }}>{o.salesPerson}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          {/* Pagination */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, fontSize: 12, color: OZ.textMuted }}>
-            <span>Page {page} of {pages} · {filtered.length} records</span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: "5px 12px", border: `1px solid ${OZ.silverDark}`, borderRadius: 6, background: OZ.white, cursor: page === 1 ? "default" : "pointer", opacity: page === 1 ? 0.5 : 1 }}>← Prev</button>
-              {Array.from({ length: Math.min(5, pages) }, (_, i) => i + 1).map(n => (
-                <button key={n} onClick={() => setPage(n)} style={{ padding: "5px 10px", border: `1px solid ${n === page ? OZ.navy : OZ.silverDark}`, borderRadius: 6, background: n === page ? OZ.navy : OZ.white, color: n === page ? OZ.white : OZ.text, cursor: "pointer", fontWeight: n === page ? 700 : 400 }}>{n}</button>
-              ))}
-              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} style={{ padding: "5px 12px", border: `1px solid ${OZ.silverDark}`, borderRadius: 6, background: OZ.white, cursor: page === pages ? "default" : "pointer", opacity: page === pages ? 0.5 : 1 }}>Next →</button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── ORDER DETAIL ─────────────────────────────────────────────────────────────
-function OrderDetail({ order, onBack }) {
-  const stages = [
-    { name: "Enquiry", key: "enquiry", done: true },
-    { name: "Quote", key: "quote", done: !!order.quotationNumber },
-    { name: "Commercial Approval", key: "commercial", done: ["Survey", "Production", "Dispatch", "Installation", "Done"].includes(order.status) },
-    { name: "Survey", key: "survey", done: ["Production", "Dispatch", "Installation", "Done"].includes(order.status) },
-    { name: "Production", key: "production", done: ["Dispatch", "Installation", "Done"].includes(order.status) },
-    { name: "Dispatch", key: "dispatch", done: ["Installation", "Done"].includes(order.status) },
-    { name: "Installation", key: "installation", done: ["Done"].includes(order.status) },
-    { name: "Handover", key: "handover", done: order.status === "Done" },
-    { name: "Completed", key: "completed", done: order.status === "Done" },
-  ];
-  const progress = Math.round((stages.filter(s => s.done).length / stages.length) * 100);
-
-  return (
-    <div>
-      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", color: OZ.navy, cursor: "pointer", fontSize: 13, fontWeight: 600, marginBottom: 16, padding: 0 }}>← Back to Orders</button>
-      <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-          <div>
-            <h3 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: OZ.text }}>Order #{order.sno}</h3>
-            <div style={{ fontSize: 12, color: OZ.textMuted }}>{order.quotationNumber} · {order.dateOfOrder}</div>
-          </div>
-          <StatusBadge status={order.status} />
-        </div>
-
-        {/* Progress */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
-            <span style={{ fontWeight: 600, color: OZ.text }}>Order Progress</span>
-            <span style={{ color: OZ.navy, fontWeight: 700 }}>{progress}% Complete</span>
-          </div>
-          <div style={{ height: 8, background: OZ.silver, borderRadius: 4 }}>
-            <div style={{ height: "100%", width: `${progress}%`, background: progress === 100 ? OZ.green : OZ.navy, borderRadius: 4, transition: "width 0.5s" }} />
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div style={{ display: "flex", overflowX: "auto", gap: 0, marginBottom: 20, paddingBottom: 8 }}>
-          {stages.map((s, i) => (
-            <div key={s.key} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 72 }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: s.done ? OZ.navy : OZ.silver, color: s.done ? OZ.white : OZ.textMuted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, border: `2px solid ${s.done ? OZ.navy : OZ.silverDark}` }}>{s.done ? "✓" : i + 1}</div>
-                <div style={{ fontSize: 10, textAlign: "center", marginTop: 4, color: s.done ? OZ.navy : OZ.textMuted, fontWeight: s.done ? 600 : 400, lineHeight: 1.2 }}>{s.name}</div>
-              </div>
-              {i < stages.length - 1 && <div style={{ height: 2, width: 16, background: s.done ? OZ.cyan : OZ.silverDark, marginBottom: 18, flexShrink: 0 }} />}
-            </div>
-          ))}
-        </div>
-
-        {/* Details */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-          {[
-            { label: "Customer", value: order.customer },
-            { label: "Partner", value: order.partner },
-            { label: "Sales Person", value: order.salesPerson },
-            { label: "Zone", value: order.zone },
-            { label: "ZM", value: order.zm },
-            { label: "RSM", value: order.rsm },
-            { label: "Product", value: order.product },
-            { label: "Total Qty", value: fmtN(order.totalQty) + " units" },
-            { label: "Basic Order Value", value: fmt(order.basicOrderValue) },
-            { label: "Total Order Value", value: fmt(order.totalOrderValue) },
-            { label: "State", value: order.state },
-            { label: "Category", value: order.category },
-          ].map(f => (
-            <div key={f.label} style={{ background: OZ.surface, borderRadius: 8, padding: "10px 12px" }}>
-              <div style={{ fontSize: 11, color: OZ.textMuted, marginBottom: 2 }}>{f.label}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: OZ.text }}>{f.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── ANALYTICS ────────────────────────────────────────────────────────────────
-function Analytics({ data }) {
-  const byZone = ZONES.map(z => ({ label: z, value: data.filter(o => o.zone === z).reduce((s, o) => s + o.basicOrderValue, 0) }));
-  const byMonth = MONTHS.map(m => ({ label: m, value: data.filter(o => o.month === m).reduce((s, o) => s + o.basicOrderValue, 0) }));
-  const byProduct = PRODUCTS.map(p => ({ label: p === "Aluminium Doors & Windows" ? "Aluminium D&W" : "UPVC Windows", value: data.filter(o => o.product === p).reduce((s, o) => s + o.basicOrderValue, 0) }));
-  const byState = STATES.map(st => ({ label: st, value: data.filter(o => o.state === st).reduce((s, o) => s + o.basicOrderValue, 0) })).sort((a, b) => b.value - a.value);
-
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: OZ.text }}>Analytics & Reports</h2>
-        <p style={{ margin: 0, fontSize: 13, color: OZ.textMuted }}>Multi-dimensional performance analysis</p>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-        <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600 }}>Revenue by Zone</h3>
-          <BarChart data={byZone} color={OZ.navy} height={150} />
-        </div>
-        <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600 }}>Monthly Revenue</h3>
-          <BarChart data={byMonth} color={OZ.cyan} height={150} />
-        </div>
-        <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600 }}>Product Contribution</h3>
-          <BarChart data={byProduct} color="#10b981" height={150} />
-        </div>
-        <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600 }}>Top States by Value</h3>
-          {byState.map((s, i) => {
-            const maxV = byState[0].value;
-            return (
-              <div key={s.label} style={{ marginBottom: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
-                  <span style={{ color: OZ.text }}>{s.label}</span>
-                  <span style={{ color: OZ.textMuted }}>{fmt(s.value)}</span>
-                </div>
-                <div style={{ height: 5, background: OZ.silver, borderRadius: 3 }}>
-                  <div style={{ height: "100%", width: `${(s.value / maxV) * 100}%`, background: i < 3 ? OZ.navy : OZ.cyanLight, borderRadius: 3 }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Status Distribution */}
-      <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px" }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600 }}>Order Status Distribution</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10 }}>
-          {STATUSES.map(s => {
-            const count = data.filter(o => o.status === s).length;
-            return (
-              <div key={s} style={{ textAlign: "center", padding: "12px 8px", background: OZ.surface, borderRadius: 8 }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: s === "Done" ? OZ.green : OZ.navy }}>{count}</div>
-                <div style={{ marginTop: 4 }}><StatusBadge status={s} /></div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── PARTNER PERFORMANCE ──────────────────────────────────────────────────────
-function Partners({ data }) {
-  const [search, setSearch] = useState("");
-  const stats = PARTNERS.map(p => {
-    const orders = data.filter(o => o.partner === p);
-    const done = orders.filter(o => o.status === "Done");
-    const value = orders.reduce((s, o) => s + o.basicOrderValue, 0);
-    return { name: p, orders: orders.length, done: done.length, value, doneValue: done.reduce((s, o) => s + o.basicOrderValue, 0), qty: orders.reduce((s, o) => s + o.totalQty, 0) };
-  }).sort((a, b) => b.value - a.value);
-
-  const filtered = stats.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()));
-
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700 }}>Partner Performance</h2>
-        <p style={{ margin: 0, fontSize: 13, color: OZ.textMuted }}>Channel partner analytics & rankings</p>
-      </div>
-      <div style={{ marginBottom: 14 }}>
-        <SearchBar value={search} onChange={setSearch} placeholder="Search partners..." />
-      </div>
-      <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-          <thead>
-            <tr style={{ background: OZ.silver }}>
-              {["Rank", "Partner Name", "Orders", "Completed", "Completion %", "Total Value", "Completed Value", "Total Qty"].map(h => (
-                <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: OZ.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${OZ.silverDark}`, whiteSpace: "nowrap" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((p, i) => (
-              <tr key={p.name} style={{ background: i % 2 === 0 ? OZ.white : "#fafbfc" }}>
-                <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}` }}>
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: i < 3 ? OZ.navy : OZ.silver, color: i < 3 ? OZ.white : OZ.textMuted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{i + 1}</div>
-                </td>
-                <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, fontWeight: 600, color: OZ.text }}>{p.name}</td>
-                <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, textAlign: "center", fontWeight: 600 }}>{p.orders}</td>
-                <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, textAlign: "center", color: OZ.green, fontWeight: 600 }}>{p.done}</td>
-                <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ flex: 1, height: 5, background: OZ.silver, borderRadius: 3 }}>
-                      <div style={{ height: "100%", width: pct(p.done, p.orders), background: OZ.green, borderRadius: 3 }} />
-                    </div>
-                    <span style={{ fontSize: 11, color: OZ.textMuted, minWidth: 36 }}>{pct(p.done, p.orders)}</span>
-                  </div>
-                </td>
-                <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, fontWeight: 700, color: OZ.navy }}>{fmt(p.value)}</td>
-                <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.green, fontWeight: 600 }}>{fmt(p.doneValue)}</td>
-                <td style={{ padding: "10px 12px", borderBottom: `1px solid ${OZ.silver}`, textAlign: "right" }}>{fmtN(p.qty)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ─── PAYMENT TRACKER ──────────────────────────────────────────────────────────
-function Payments({ data }) {
-  const total = data.reduce((s, o) => s + o.basicOrderValue, 0);
-  const adv = data.reduce((s, o) => s + o.advance, 0);
-  const survey = data.reduce((s, o) => s + o.survey, 0);
-  const despatch = data.reduce((s, o) => s + o.despatch, 0);
-  const collected = adv + survey + despatch;
-  const outstanding = total - collected;
-
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700 }}>Payment Tracker</h2>
-        <p style={{ margin: 0, fontSize: 13, color: OZ.textMuted }}>Advance, survey, and dispatch payment monitoring</p>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
-        <KpiCard label="Total Order Value" value={fmt(total)} icon="💰" accent="navy" />
-        <KpiCard label="Advance Collected" value={fmt(adv)} sub={pct(adv, total)} icon="✅" accent="green" />
-        <KpiCard label="Survey Stage" value={fmt(survey)} sub={pct(survey, total)} icon="📐" accent="amber" />
-        <KpiCard label="Despatch Stage" value={fmt(despatch)} sub={pct(despatch, total)} icon="🚚" accent="cyan" />
-        <KpiCard label="Total Collected" value={fmt(collected)} sub={pct(collected, total) + " of total"} icon="🏆" accent="green" />
-        <KpiCard label="Outstanding" value={fmt(outstanding)} sub={pct(outstanding, total) + " pending"} icon="⚠️" accent="red" />
-      </div>
-
-      {/* Collection pipeline */}
-      <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600 }}>Collection Pipeline</h3>
-        {[
-          { label: "Advance (30%)", value: adv, color: OZ.navy },
-          { label: "Survey Stage (20%)", value: survey, color: OZ.cyan },
-          { label: "Despatch Stage (40%)", value: despatch, color: OZ.green },
-          { label: "Outstanding (10%)", value: outstanding, color: OZ.amber },
-        ].map(item => (
-          <div key={item.label} style={{ marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 5 }}>
-              <span style={{ color: OZ.text, fontWeight: 500 }}>{item.label}</span>
-              <span style={{ fontWeight: 700, color: item.color }}>{fmt(item.value)}</span>
-            </div>
-            <div style={{ height: 8, background: OZ.silver, borderRadius: 4 }}>
-              <div style={{ height: "100%", width: `${(item.value / total) * 100}%`, background: item.color, borderRadius: 4 }} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Payment table (sample) */}
-      <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${OZ.silver}`, fontSize: 13, fontWeight: 600 }}>Recent Payment Records</div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-          <thead>
-            <tr style={{ background: OZ.silver }}>
-              {["Order #", "Customer", "Partner", "Basic Value", "Advance", "Survey", "Despatch", "Status"].map(h => (
-                <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontWeight: 600, color: OZ.textMuted, fontSize: 11, textTransform: "uppercase", borderBottom: `1px solid ${OZ.silverDark}` }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.slice(0, 15).map((o, i) => (
-              <tr key={o.sno} style={{ background: i % 2 === 0 ? OZ.white : "#fafbfc" }}>
-                <td style={{ padding: "9px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.navy, fontWeight: 600 }}>{o.sno}</td>
-                <td style={{ padding: "9px 12px", borderBottom: `1px solid ${OZ.silver}` }}>{o.customer}</td>
-                <td style={{ padding: "9px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.textMuted }}>{o.partner}</td>
-                <td style={{ padding: "9px 12px", borderBottom: `1px solid ${OZ.silver}`, fontWeight: 700, color: OZ.navy }}>{fmt(o.basicOrderValue)}</td>
-                <td style={{ padding: "9px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.green }}>{fmt(o.advance)}</td>
-                <td style={{ padding: "9px 12px", borderBottom: `1px solid ${OZ.silver}`, color: "#0891b2" }}>{fmt(o.survey)}</td>
-                <td style={{ padding: "9px 12px", borderBottom: `1px solid ${OZ.silver}`, color: OZ.amber }}>{fmt(o.despatch)}</td>
-                <td style={{ padding: "9px 12px", borderBottom: `1px solid ${OZ.silver}` }}><StatusBadge status={o.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ─── SALES FUNNEL ─────────────────────────────────────────────────────────────
-function SalesFunnel({ data }) {
-  const total = data.length;
-  const stages = [
-    { name: "Enquiry", count: total, color: OZ.navy },
-    { name: "Quote", count: Math.round(total * 0.88), color: OZ.navyLight },
-    { name: "Commercial Approval", count: Math.round(total * 0.74), color: OZ.cyan },
-    { name: "Survey", count: data.filter(o => ["Survey", "Production", "Dispatch", "Installation", "Done"].includes(o.status)).length, color: "#0891b2" },
-    { name: "Production", count: data.filter(o => ["Production", "Dispatch", "Installation", "Done"].includes(o.status)).length, color: "#10b981" },
-    { name: "Dispatch", count: data.filter(o => ["Dispatch", "Installation", "Done"].includes(o.status)).length, color: "#059669" },
-    { name: "Installation", count: data.filter(o => ["Installation", "Done"].includes(o.status)).length, color: "#f59e0b" },
-    { name: "Handover", count: data.filter(o => o.status === "Done").length + Math.round(Math.random() * 3), color: "#d97706" },
-    { name: "Completed", count: data.filter(o => o.status === "Done").length, color: "#10b981" },
-  ];
-
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700 }}>Sales Funnel</h2>
-        <p style={{ margin: 0, fontSize: 13, color: OZ.textMuted }}>End-to-end order lifecycle visibility</p>
-      </div>
-      <div style={{ background: OZ.white, border: `1px solid ${OZ.silverDark}`, borderRadius: 12, padding: "24px 28px" }}>
-        <div style={{ maxWidth: 560, margin: "0 auto" }}>
-          {stages.map((s, i) => {
-            const width = `${(s.count / total) * 100}%`;
-            const prevCount = i > 0 ? stages[i - 1].count : s.count;
-            const dropPct = i > 0 ? (((prevCount - s.count) / prevCount) * 100).toFixed(1) : null;
-            return (
-              <div key={s.name} style={{ marginBottom: 4 }}>
-                {dropPct && s.count < prevCount && (
-                  <div style={{ textAlign: "center", fontSize: 10, color: OZ.red, marginBottom: 2 }}>↓ {dropPct}% drop-off</div>
-                )}
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 100, textAlign: "right", fontSize: 11, color: OZ.textMuted, flexShrink: 0 }}>{s.name}</div>
-                  <div style={{ flex: 1, height: 34, background: OZ.silver, borderRadius: 4, overflow: "hidden", display: "flex", alignItems: "center" }}>
-                    <div style={{ width, height: "100%", background: s.color, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8, boxSizing: "border-box", minWidth: 40, transition: "width 0.6s" }}>
-                      <span style={{ color: OZ.white, fontSize: 11, fontWeight: 700 }}>{s.count}</span>
-                    </div>
-                  </div>
-                  <div style={{ width: 48, fontSize: 11, color: OZ.textMuted, flexShrink: 0, textAlign: "right" }}>{pct(s.count, total)}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          <div style={{ background: OZ.surface, borderRadius: 8, padding: "12px 14px", textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: OZ.textMuted }}>Overall Conversion</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: OZ.green }}>{pct(stages[stages.length - 1].count, total)}</div>
-          </div>
-          <div style={{ background: OZ.surface, borderRadius: 8, padding: "12px 14px", textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: OZ.textMuted }}>Orders in Progress</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: OZ.navy }}>{data.filter(o => o.status !== "Done" && o.status !== "Pending").length}</div>
-          </div>
-          <div style={{ background: OZ.surface, borderRadius: 8, padding: "12px 14px", textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: OZ.textMuted }}>Avg. Order Value</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: OZ.navy }}>{fmt(data.reduce((s, o) => s + o.basicOrderValue, 0) / data.length)}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── MAIN APP ────────────────────────────────────────────────────────────────
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [active, setActive] = useState("dashboard");
-  const [collapsed, setCollapsed] = useState(false);
-  const [filters, setFilters] = useState({ zone: "", product: "", status: "", month: "", salesPerson: "" });
-  const [globalSearch, setGlobalSearch] = useState("");
-
-  const filteredData = useMemo(() => {
-    return ALL_ORDERS.filter(o => {
-      if (filters.zone && o.zone !== filters.zone) return false;
-      if (filters.product && o.product !== filters.product) return false;
-      if (filters.status && o.status !== filters.status) return false;
-      if (filters.month && o.month !== filters.month) return false;
-      if (filters.salesPerson && o.salesPerson !== filters.salesPerson) return false;
-      return true;
-    });
-  }, [filters]);
-
-  if (!user) return <LoginScreen onLogin={setUser} />;
-
-  const pages = {
-    dashboard: <Dashboard data={filteredData} />,
-    orders: <OrderManagement data={filteredData} />,
-    analytics: <Analytics data={filteredData} />,
-    partners: <Partners data={filteredData} />,
-    payments: <Payments data={filteredData} />,
-    funnel: <SalesFunnel data={filteredData} />,
-  };
-
-  return (
-    <div style={{ display: "flex", minHeight: "100vh", background: OZ.surface, fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", color: OZ.text }}>
-      <Sidebar active={active} setActive={setActive} collapsed={collapsed} setCollapsed={setCollapsed} user={user} onLogout={() => setUser(null)} />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* Top bar */}
-        <div style={{ background: OZ.white, borderBottom: `1px solid ${OZ.silverDark}`, padding: "12px 24px", display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
-          <div style={{ flex: 1, maxWidth: 440 }}>
-            <SearchBar value={globalSearch} onChange={setGlobalSearch} placeholder="Search across all orders, customers, partners, zones..." />
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <FilterBar filters={filters} setFilters={setFilters} />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: OZ.green }} />
-            <span style={{ fontSize: 12, color: OZ.textMuted }}>Live</span>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: OZ.navy, color: OZ.white, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
-              {user.name[0]}
-            </div>
-          </div>
-        </div>
-        {/* Content */}
-        <div style={{ flex: 1, padding: "24px", overflowY: "auto" }}>
-          {pages[active]}
-        </div>
-        {/* Footer */}
-        <div style={{ background: OZ.white, borderTop: `1px solid ${OZ.silverDark}`, padding: "8px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: OZ.textLight, flexShrink: 0 }}>
-          <span>© 2025 Ozone Overseas Pvt Ltd · Enterprise Order Intelligence Platform</span>
-          <span>v1.0.0 · {filteredData.length} records loaded</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ── INIT ──────────────────────────────────────────────────────
+window.onload=()=>{
+  renderOrders();
+  renderPartners();
+};
+</script>
+</body>
+</html>
