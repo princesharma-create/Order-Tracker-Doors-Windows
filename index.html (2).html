@@ -1,914 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ozone Overseas — Master Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-:root{
-  --navy:#002060; --ink:#0A1633; --ink2:#13203f;
-  --gold:#FFC000; --gold-deep:#E0A500;
-  --canvas:#EEF2F8; --panel:#FFFFFF; --line:#E2E8F2; --line2:#D4DCEA;
-  --text:#1A2238; --muted:#64708A; --faint:#93A0B8;
-  --success:#1F9D6B; --success-bg:#E6F5EE;
-  --warning:#E8A33D; --warning-bg:#FCF3E3;
-  --danger:#E0454A; --danger-bg:#FBE9EA;
-  --info:#2D6BD4; --info-bg:#E8F0FC;
-  --radius:16px; --radius-sm:11px;
-  --shadow:0 1px 2px rgba(10,22,51,.04),0 4px 16px rgba(10,22,51,.06);
-  --shadow-lg:0 8px 30px rgba(10,22,51,.10);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--canvas);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
-.mono{font-family:'JetBrains Mono',monospace}
-h1,h2,h3,.disp{font-family:'Sora',sans-serif}
-a{color:inherit;text-decoration:none}
-::-webkit-scrollbar{height:9px;width:9px}
-::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px}
-::-webkit-scrollbar-track{background:transparent}
+/*************************************************************************************
+ * OZONE OVERSEAS — SAMPLE REQUEST SYSTEM (multi-product backend)  Doc OZB-M-SAM-D01 R01
+ * -----------------------------------------------------------------------------------
+ * Serves the multi-product form, reads the Product Master live, and writes ONE ROW
+ * PER PRODUCT LINE to the response sheet — every row sharing the same Request ID and
+ * requester details, so your automation can group them by Request ID.
+ *
+ * IMPORTANT: COLUMN_HEADERS below is the single source of truth for the response
+ * sheet layout. It MUST match (a) your response sheet's header row and (b) the
+ * COLUMNS array in the form's HTML. Change it in these places together.
+ *************************************************************************************/
 
-/* ===== HEADER ===== */
-.top{position:sticky;top:0;z-index:50;background:linear-gradient(120deg,var(--ink) 0%,var(--navy) 70%);color:#fff;box-shadow:0 2px 18px rgba(0,32,96,.25)}
-.top-in{max-width:1500px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
-.logo{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--gold),var(--gold-deep));display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:var(--ink);font-size:20px;flex-shrink:0;box-shadow:0 3px 10px rgba(255,192,0,.3)}
-.brand h1{font-size:18px;font-weight:700;letter-spacing:-.2px;line-height:1.1}
-.brand .sub{font-size:11px;color:#A9B7D6;font-weight:500;letter-spacing:.3px}
-.search-wrap{flex:1;min-width:200px;max-width:520px;position:relative}
-.search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.5}
-#globalSearch{width:100%;padding:11px 14px 11px 40px;border-radius:11px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.10);color:#fff;font-size:13.5px;font-family:inherit;outline:none;transition:.15s}
-#globalSearch::placeholder{color:#9FB0D2}
-#globalSearch:focus{background:rgba(255,255,255,.17);border-color:var(--gold)}
-.snap{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#BFE3D4;background:rgba(31,157,107,.18);border:1px solid rgba(31,157,107,.35);padding:7px 12px;border-radius:9px;font-weight:600;white-space:nowrap}
-.snap .dot{width:7px;height:7px;border-radius:50%;background:#36D196;box-shadow:0 0 0 3px rgba(54,209,150,.25)}
-
-/* ===== FILTER BAR ===== */
-.filters{background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:68px;z-index:40;box-shadow:var(--shadow)}
-.filters-in{max-width:1500px;margin:0 auto;padding:12px 22px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-.fg{display:flex;flex-direction:column;gap:4px}
-.fg label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding-left:2px}
-.fg select{padding:8px 11px;border-radius:9px;border:1px solid var(--line2);background:#fff;font-family:inherit;font-size:12.5px;color:var(--text);outline:none;cursor:pointer;min-width:118px;transition:.15s}
-.fg select:focus{border-color:var(--navy)}
-.fg select:hover{border-color:var(--faint)}
-.reset{margin-left:auto;align-self:flex-end;padding:9px 16px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--danger);font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:.15s}
-.reset:hover{background:var(--danger-bg);border-color:var(--danger)}
-.active-note{width:100%;font-size:11.5px;color:var(--info);font-weight:600;display:none}
-
-/* ===== LAYOUT ===== */
-.wrap{max-width:1500px;margin:0 auto;padding:22px}
-.sec{margin-bottom:30px;scroll-margin-top:150px}
-.sec-head{display:flex;align-items:center;gap:11px;margin-bottom:14px}
-.sec-head .ic{width:30px;height:30px;border-radius:9px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sec-head h2{font-size:16.5px;font-weight:700;letter-spacing:-.2px}
-.sec-head .tag{margin-left:auto;font-size:11px;font-weight:600;color:var(--muted);background:var(--canvas);padding:4px 11px;border-radius:20px;border:1px solid var(--line)}
-
-/* ===== FLOW RIBBON ===== */
-.flow{background:linear-gradient(120deg,#fff,#FAFBFE);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px;box-shadow:var(--shadow);overflow-x:auto}
-.flow-row{display:flex;align-items:stretch;gap:0;min-width:920px}
-.stage{flex:1;text-align:center;cursor:pointer;padding:8px 6px;border-radius:12px;transition:.18s;position:relative}
-.stage:hover{background:var(--canvas)}
-.stage .sIc{width:46px;height:46px;margin:0 auto 9px;border-radius:13px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:var(--shadow)}
-.stage .sNum{font-family:'JetBrains Mono';font-size:27px;font-weight:700;line-height:1;color:var(--ink)}
-.stage .sLbl{font-size:12px;font-weight:600;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.4px}
-.stage .sSub{font-size:10.5px;color:var(--faint);margin-top:3px;height:13px}
-.conn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:14px;min-width:46px}
-.conn .pct{font-family:'JetBrains Mono';font-size:12px;font-weight:700;color:var(--gold-deep);margin-bottom:3px}
-.conn .arr{color:var(--line2)}
-
-/* ===== KPI CARDS ===== */
-.kgrid{display:grid;gap:14px}
-.k6{grid-template-columns:repeat(6,1fr)}
-.k4{grid-template-columns:repeat(4,1fr)}
-.k3{grid-template-columns:repeat(3,1fr)}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px 17px 15px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:.18s}
-.kpi:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
-.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--navy)}
-.kpi.g::before{background:var(--gold)}
-.kpi.green::before{background:var(--success)}
-.kpi.red::before{background:var(--danger)}
-.kpi.amber::before{background:var(--warning)}
-.kpi .kTop{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
-.kpi .kLbl{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;line-height:1.3}
-.kpi .kIc{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--info-bg);color:var(--info)}
-.kpi .kIc.gold{background:#FFF6DC;color:var(--gold-deep)}
-.kpi .kIc.grn{background:var(--success-bg);color:var(--success)}
-.kpi .kIc.amb{background:var(--warning-bg);color:var(--warning)}
-.kpi .kIc.red{background:var(--danger-bg);color:var(--danger)}
-.kpi .kVal{font-family:'JetBrains Mono';font-size:29px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-.5px}
-.kpi.big .kVal{font-size:33px}
-.kpi .kSub{font-size:11.5px;color:var(--faint);margin-top:7px;font-weight:500}
-.pend{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--warning);background:var(--warning-bg);padding:2px 7px;border-radius:6px;text-transform:none;letter-spacing:0;margin-top:7px}
-.kVal.na{color:var(--faint);font-size:20px;font-family:'Inter';font-weight:600}
-
-/* small KPI variant */
-.kpi.sm{padding:14px}
-.kpi.sm .kVal{font-size:23px}
-.kpi.sm .kLbl{font-size:10.5px}
-
-/* ===== CHARTS ===== */
-.cgrid{display:grid;gap:16px}
-.c2{grid-template-columns:repeat(2,1fr)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
-.card h3{font-size:14px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:8px}
-.card .csub{font-size:11.5px;color:var(--muted);margin-bottom:15px}
-.cbox{position:relative;height:280px}
-.cbox.tall{height:320px}
-
-/* funnel */
-.funnel{display:flex;flex-direction:column;gap:9px;padding-top:6px}
-.fstep{position:relative}
-.fbar{height:46px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:#fff;font-weight:600;box-shadow:var(--shadow);transition:.4s}
-.fbar .fn{font-size:12.5px;opacity:.95}
-.fbar .fv{font-family:'JetBrains Mono';font-size:16px;font-weight:700}
-.fdrop{font-size:10.5px;color:var(--muted);text-align:right;padding:3px 4px 0;font-weight:600}
-
-/* progress ring */
-.ring-wrap{display:flex;align-items:center;justify-content:center;gap:26px;flex-wrap:wrap;height:280px}
-.ring{position:relative;width:170px;height:170px}
-.ring .lbl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring .lbl .p{font-family:'JetBrains Mono';font-size:34px;font-weight:700;color:var(--ink)}
-.ring .lbl .t{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.rlegend{display:flex;flex-direction:column;gap:13px}
-.rli{display:flex;align-items:center;gap:10px}
-.rli .sw{width:13px;height:13px;border-radius:4px;flex-shrink:0}
-.rli .rt{font-size:12.5px;color:var(--muted);font-weight:500}
-.rli .rt b{display:block;font-family:'JetBrains Mono';font-size:17px;color:var(--ink);font-weight:700}
-
-/* ===== ALERTS ===== */
-.alerts{display:grid;grid-template-columns:repeat(5,1fr);gap:13px}
-.alert{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warning);border-radius:var(--radius-sm);padding:15px 16px;box-shadow:var(--shadow);transition:.18s}
-.alert:hover{box-shadow:var(--shadow-lg)}
-.alert.crit{border-left-color:var(--danger)}
-.alert .aHd{display:flex;align-items:center;gap:8px;margin-bottom:9px}
-.alert .aHd .aic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--warning-bg);color:var(--warning);flex-shrink:0}
-.alert.crit .aHd .aic{background:var(--danger-bg);color:var(--danger)}
-.alert .aHd .at{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
-.alert .aVal{font-family:'JetBrains Mono';font-size:30px;font-weight:700;color:var(--ink);line-height:1}
-.alert .aDesc{font-size:11.5px;color:var(--faint);margin-top:6px}
-
-/* ===== TABLE ===== */
-.tbl-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-.tbl-top{padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.tbl-top h3{font-size:14px;font-weight:700}
-.tbl-top .cnt{font-size:11.5px;color:var(--muted);background:var(--canvas);padding:3px 10px;border-radius:20px;font-weight:600}
-.tbl-tabs{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
-.ttab{padding:7px 14px;border-radius:8px;border:1px solid var(--line2);background:#fff;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;transition:.15s}
-.ttab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
-.tscroll{overflow-x:auto;max-height:560px;overflow-y:auto}
-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
-thead th{position:sticky;top:0;background:var(--ink);color:#fff;font-weight:600;text-align:left;padding:11px 13px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;z-index:2}
-tbody td{padding:10px 13px;border-bottom:1px solid var(--line)}
-tbody tr:hover{background:var(--canvas)}
-tbody tr:last-child td{border-bottom:none}
-.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.2px}
-.pill.ok{background:var(--success-bg);color:var(--success)}
-.pill.wait{background:var(--warning-bg);color:var(--warning)}
-.pill.no{background:var(--canvas);color:var(--muted)}
-.pill.dn{background:var(--info-bg);color:var(--info)}
-.rt-num{font-family:'JetBrains Mono';font-weight:600}
-.empty{padding:50px;text-align:center;color:var(--faint);font-size:13px}
-
-/* ===== FOOTER ===== */
-.foot{max-width:1500px;margin:10px auto 0;padding:22px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.foot b{color:var(--text)}
-
-/* note banner */
-.banner{background:linear-gradient(100deg,#FFF6DC,#FEFBF0);border:1px solid #F2D98A;border-radius:var(--radius);padding:13px 17px;display:flex;align-items:flex-start;gap:11px;margin-bottom:22px;font-size:12.5px;color:#6B5618;box-shadow:var(--shadow)}
-.banner svg{flex-shrink:0;color:var(--gold-deep);margin-top:1px}
-.banner b{color:#5A4710}
-
-@media(max-width:1200px){
-  .k6{grid-template-columns:repeat(3,1fr)}
-  .alerts{grid-template-columns:repeat(3,1fr)}
-}
-@media(max-width:760px){
-  .top-in{padding:11px 14px}
-  .wrap{padding:14px}
-  .filters-in{padding:11px 14px;gap:8px}
-  .fg select{min-width:0;width:100%}
-  .fg{flex:1;min-width:110px}
-  .c2{grid-template-columns:1fr}
-  .k6,.k4,.k3{grid-template-columns:repeat(2,1fr)}
-  .alerts{grid-template-columns:1fr 1fr}
-  .kpi .kVal{font-size:24px}
-  .brand h1{font-size:15px}
-  .reset{margin-left:0;width:100%;justify-content:center}
-}
-@media(max-width:440px){
-  .k6,.k4,.k3{grid-template-columns:1fr 1fr}
-  .alerts{grid-template-columns:1fr}
-}
-</style>
-</head>
-<body>
-<!-- ===== HEADER ===== -->
-<header class="top">
-  <div class="top-in">
-    <div class="brand">
-      <div class="logo">O</div>
-      <div>
-        <h1>Ozone Overseas</h1>
-        <div class="sub">MASTER DASHBOARD · QUOTATION → INSTALLATION</div>
-      </div>
-    </div>
-    <div class="search-wrap">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input id="globalSearch" type="text" placeholder="Search order, quote, customer, partner, city, salesperson…" autocomplete="off">
-    </div>
-    <div class="snap"><span class="dot"></span><span id="snapTxt">Data snapshot</span></div>
-  </div>
-</header>
-
-<!-- ===== FILTERS ===== -->
-<div class="filters">
-  <div class="filters-in">
-    <div class="fg"><label>Month</label><select id="fMonth"></select></div>
-    <div class="fg"><label>Zone</label><select id="fZone"></select></div>
-    <div class="fg"><label>Product</label><select id="fProduct"></select></div>
-    <div class="fg"><label>Segment</label><select id="fSeg"></select></div>
-    <div class="fg"><label>Partner</label><select id="fPartner"></select></div>
-    <div class="fg"><label>Salesperson</label><select id="fSp"></select></div>
-    <div class="fg"><label>City</label><select id="fCity"></select></div>
-    <div class="fg"><label>Order Status</label><select id="fStatus"></select></div>
-    <button class="reset" id="resetBtn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg>
-      Reset
-    </button>
-    <div class="active-note" id="activeNote"></div>
-  </div>
-</div>
-
-<div class="wrap">
-
-  <!-- snapshot banner -->
-  <div class="banner">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div><b>Working from a data snapshot.</b> Quotation, Survey &amp; Installation and Production figures are live from your sheets. Order / Dispatch / Installation <b>rupee values</b> need the Order Execution Tracker — download each sheet as Excel (File → Download → .xlsx) and re-upload to refresh every number here. A standalone file can't auto-sync to Google Sheets.</div>
-  </div>
-
-  <!-- ===== FLOW RIBBON ===== -->
-  <div class="sec">
-    <div class="flow">
-      <div class="flow-row" id="flowRow"></div>
-    </div>
-  </div>
-
-  <!-- ===== SECTION 1: TOP KPIs ===== -->
-  <div class="sec" id="s-top">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
-      <h2>Business Flow KPIs</h2>
-      <span class="tag">End-to-end overview</span>
-    </div>
-    <div class="kgrid k6" id="topKpis"></div>
-  </div>
-
-  <!-- ===== SECTION 2: QUOTATION ===== -->
-  <div class="sec" id="s-quote">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></div>
-      <h2>Quotation Summary</h2>
-      <span class="tag" id="quoteTag"></span>
-    </div>
-    <div class="kgrid k6" id="quoteKpis"></div>
-  </div>
-
-  <!-- ===== SECTION 3: ORDER ===== -->
-  <div class="sec" id="s-order">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></div>
-      <h2>Order Summary</h2>
-      <span class="tag" id="orderTag"></span>
-    </div>
-    <div class="kgrid k4" id="orderKpis" style="margin-bottom:14px"></div>
-    <div class="kgrid k6" id="orderKpis2"></div>
-  </div>
-
-  <!-- ===== SECTION 4: SURVEY ===== -->
-  <div class="sec" id="s-survey">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-      <h2>Survey Summary</h2>
-      <span class="tag">Survey &amp; Installation Tracker</span>
-    </div>
-    <div class="kgrid k6" id="surveyKpis"></div>
-  </div>
-
-  <!-- ===== SECTION 5: PRODUCTION ===== -->
-  <div class="sec" id="s-prod">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M4 20V8l5 4V8l5 4V8l5 4v8"/></svg></div>
-      <h2>Production Summary</h2>
-      <span class="tag">Production MIS · month-to-date</span>
-    </div>
-    <div class="kgrid k6" id="prodKpis" style="margin-bottom:16px"></div>
-    <div class="cgrid c2">
-      <div class="card">
-        <h3>Monthly / Daily Production Trend</h3>
-        <div class="csub">Units produced per day — Aluminium vs uPVC</div>
-        <div class="cbox"><canvas id="prodTrendChart"></canvas></div>
-      </div>
-      <div class="card">
-        <h3>Production Delay Analysis</h3>
-        <div class="csub">Root-cause split of delayed / pending units</div>
-        <div class="cbox"><canvas id="delayChart"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== SECTION 6: DISPATCH ===== -->
-  <div class="sec" id="s-dispatch">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M14 9h4l4 4v4a1 1 0 0 1-1 1h-1"/><circle cx="7.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg></div>
-      <h2>Dispatch Summary</h2>
-      <span class="tag">Dispatched &amp; handed-over orders</span>
-    </div>
-    <div class="kgrid k6" id="dispatchKpis"></div>
-  </div>
-
-  <!-- ===== SECTION 7: INSTALLATION ===== -->
-  <div class="sec" id="s-install">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
-      <h2>Installation Summary</h2>
-      <span class="tag">Survey &amp; Installation Tracker</span>
-    </div>
-    <div class="kgrid k6" id="installKpis"></div>
-  </div>
-
-  <!-- ===== VISUALIZATIONS ===== -->
-  <div class="sec" id="s-viz">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg></div>
-      <h2>Analytics &amp; Visualizations</h2>
-      <span class="tag">Filtered live</span>
-    </div>
-    <div class="cgrid c2">
-      <div class="card">
-        <h3>Monthly Revenue Trend</h3>
-        <div class="csub">Quotation value by month (₹)</div>
-        <div class="cbox"><canvas id="revChart"></canvas></div>
-      </div>
-      <div class="card">
-        <h3>Quotation → Order Conversion</h3>
-        <div class="csub">Funnel across the business flow</div>
-        <div class="funnel" id="funnel"></div>
-      </div>
-      <div class="card">
-        <h3>Product-wise Order Distribution</h3>
-        <div class="csub">Orders by product type</div>
-        <div class="cbox"><canvas id="productChart"></canvas></div>
-      </div>
-      <div class="card">
-        <h3>Zone-wise Business Distribution</h3>
-        <div class="csub">Quotation value &amp; order count by zone</div>
-        <div class="cbox"><canvas id="zoneChart"></canvas></div>
-      </div>
-      <div class="card">
-        <h3>Dispatch Performance</h3>
-        <div class="csub">Dispatched order quantity by month</div>
-        <div class="cbox"><canvas id="dispatchChart"></canvas></div>
-      </div>
-      <div class="card">
-        <h3>Installation Progress</h3>
-        <div class="csub">Completed vs in-progress vs pending</div>
-        <div class="ring-wrap">
-          <div class="ring"><canvas id="installRing"></canvas><div class="lbl"><span class="p" id="installRingPct">0%</span><span class="t">Complete</span></div></div>
-          <div class="rlegend" id="installLegend"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== ALERTS ===== -->
-  <div class="sec" id="s-alerts">
-    <div class="sec-head">
-      <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
-      <h2>Alerts &amp; Monitoring</h2>
-      <span class="tag">Pending &amp; overdue</span>
-    </div>
-    <div class="alerts" id="alerts"></div>
-  </div>
-
-  <!-- ===== RECORDS TABLE ===== -->
-  <div class="sec" id="s-table">
-    <div class="tbl-card">
-      <div class="tbl-top">
-        <h3>Records</h3>
-        <span class="cnt" id="tblCount">0</span>
-        <div class="tbl-tabs">
-          <button class="ttab on" data-tab="orders">Orders / Execution</button>
-          <button class="ttab" data-tab="quotes">Quotations</button>
-        </div>
-      </div>
-      <div class="tscroll">
-        <table id="dataTable">
-          <thead id="tblHead"></thead>
-          <tbody id="tblBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<footer class="foot">
-  <div>© Ozone Overseas — Master Dashboard · <b>Single source of truth, Quotation → Installation</b></div>
-  <div id="footMeta"></div>
-</footer>
-
-<script>
-const QUOTATIONS = [{"q": "FY26_Q0001_P", "p": "Trendcon", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Bangalore", "z": "South", "sp": "Sumit Kaura", "m": "May-25", "d": "18/05/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 2397, "area": 57470.0, "val": 31409839}, {"q": "FY26_Q0002_R", "p": "Ram Krishna Rao", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Bangalore", "z": "South", "sp": "Sumit Kaura", "m": "May-25", "d": "13/05/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 23, "area": 462.2, "val": 357497}, {"q": "FY26_Q0003_P", "p": "ITD, Faridabad", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "NCR", "z": "North", "sp": "Kapil Mohan Sachdeva", "m": "May-25", "d": "19/05/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 1134, "area": 17079.0, "val": 13087646}, {"q": "FY26_Q0004_P", "p": "Pioneer, Senior Living", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Kapil Mohan Sachdeva", "m": "May-25", "d": "23/05/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 1690, "area": 48690.0, "val": 37355412}, {"q": "FY26_Q0005_R", "p": "Puneet Chandra", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "YP Singh", "m": "May-25", "d": "24/05/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 9, "area": 216.0, "val": 181491}, {"q": "FY26_Q0006_P", "p": "Ozone Ghiloth Plant", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghiloth, Rajasthan", "z": "North", "sp": "YP Singh", "m": "Apr-25", "d": "06/04/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 135, "area": 5083.6, "val": 2242498}, {"q": "FY26_Q0005_R", "p": "Puneet Chandra", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Kapil Mohan Sachdeva", "m": "Jun-25", "d": "06/06/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 17, "area": 278.8, "val": 214589}, {"q": "FY26_Q0004_P", "p": "Pioneer, Senior Living", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Kapil Mohan Sachdeva", "m": "", "d": "", "st": "Incomplete details", "stage": "Inprogress", "qty": 1690, "area": 48690.0, "val": 0}, {"q": "NA", "p": "Falcon-Milennium Builders Pune", "seg": "Project", "mat": "Aluminium", "col": "MULTI COLOR", "city": "Pune", "z": "South", "sp": "Sumit Kaura", "m": "", "d": "", "st": "NTQ", "stage": "", "qty": 0, "area": 0.0, "val": 0}, {"q": "NA", "p": "Sunil-Manchirevula", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Hyderbad", "z": "South", "sp": "Sumit Kaura", "m": "", "d": "", "st": "NTQ", "stage": "", "qty": 0, "area": 0.0, "val": 0}, {"q": "FY26_Q0007_P", "p": "Gohana railway station", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Haryana", "z": "North", "sp": "Prakhar Gautam", "m": "Jun-25", "d": "17/06/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 45, "area": 699.1, "val": 564824}, {"q": "FY26_Q0006_P", "p": "Ozone Ghiloth Plant", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghiloth, Rajasthan", "z": "North", "sp": "YP Singh", "m": "Jun-25", "d": "17/06/2025", "st": "Quote sent", "stage": "WON", "qty": 135, "area": 5126.0, "val": 2133846}, {"q": "FY26_Q0005_R", "p": "Puneet Chandra", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Kapil Mohan Sachdeva", "m": "Jun-25", "d": "16/06/2025", "st": "Quote sent", "stage": "WON", "qty": 17, "area": 278.8, "val": 200535}, {"q": "FY26_Q0008_R", "p": "Preeta", "seg": "Retail", "mat": "Aluminium", "col": "CLASSIC WALNUT", "city": "Chennai", "z": "South", "sp": "Sumit Kaura", "m": "", "d": "", "st": "NTQ", "stage": "", "qty": 44, "area": 1418.8, "val": 0}, {"q": "FY26_Q0009_R", "p": "Sathya", "seg": "Retail", "mat": "Aluminium", "col": "CRYSTAL BLACK", "city": "Bangalore", "z": "South", "sp": "Vishwanatha C", "m": "", "d": "", "st": "NTQ", "stage": "", "qty": 28, "area": 1017.4, "val": 0}, {"q": "FY26_Q0010_R", "p": "Jalil", "seg": "Retail", "mat": "uPVC", "col": "CLASSIC WALNUT", "city": "Kochi", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "04/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 29, "area": 717.7, "val": 1285698}, {"q": "FY26_Q0011_R", "p": "Mr.Ambili", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Kochi", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "05/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 23, "area": 500.4, "val": 621984}, {"q": "FY26_Q0012_R", "p": "Vinay Kumar", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Kerala", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "09/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 27, "area": 629.6, "val": 764894}, {"q": "FY26_Q0013_R", "p": "Jude Antony", "seg": "Retail", "mat": "uPVC", "col": "LIGHT OAK", "city": "Kerala", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "21/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 29, "area": 1074.3, "val": 1710229}, {"q": "FY26_Q0010_R", "p": "Jalil", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Kochi", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "07/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 29, "area": 717.7, "val": 945127}, {"q": "FY26_Q0010_R", "p": "Jalil", "seg": "Retail", "mat": "uPVC", "col": "CLASSIC WALNUT", "city": "Kochi", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "07/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 29, "area": 717.7, "val": 1008008}, {"q": "FY26_Q0011_R", "p": "Mr.Ambili", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Kochi", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "07/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 23, "area": 500.4, "val": 500544}, {"q": "FY26_Q0032_R", "p": "Ms. Nupur Chaudhary", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "Delhi", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "13/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 56, "area": 4163.7, "val": 7085857}, {"q": "FY26_Q0016_R", "p": "Siraj Builder", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Jul-25", "d": "22/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 70, "area": 761.4, "val": 1049692}, {"q": "FY26_Q0017_P", "p": "360 life", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Jul-25", "d": "17/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 3285, "area": 72596.1, "val": 48350710}, {"q": "FY26_Q0025_P", "p": "Sunflower Group Housing", "seg": "Project", "mat": "Aluminium", "col": "URBAN GREY", "city": "Ghaziabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "05/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6860, "area": 216744.6, "val": 162552440}, {"q": "FY26_Q0014_R", "p": "Harish Kumar Residence", "seg": "Retail", "mat": "uPVC", "col": "CLASSIC WALNUT", "city": "Bangalore", "z": "South", "sp": "Vishwanatha C", "m": "Jul-25", "d": "15/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 12, "area": 520.3, "val": 764280}, {"q": "FY26_Q0015_R", "p": "KUN Enterprises", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Jul-25", "d": "10/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 10, "area": 70.1, "val": 108042}, {"q": "FY26_Q0018_R", "p": "Mr.Jaison", "seg": "Retail", "mat": "uPVC", "col": "CLASSIC WALNUT", "city": "Kochi", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "14/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 29, "area": 1715.4, "val": 1360122}, {"q": "FY26_Q0019_R", "p": "Devnath Reddy", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Jul-25", "d": "22/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 107, "area": 1808.2, "val": 2099063}, {"q": "FY26_Q0037_R", "p": "Subhash Lakra", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "Bahadurgarh", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "14/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 8, "area": 255.9, "val": 419528}, {"q": "FY26_Q0020_R", "p": "Vanshika", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Agra", "z": "North", "sp": "Varun Yadav", "m": "Jul-25", "d": "22/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 1, "area": 52.3, "val": 73109}, {"q": "FY26_Q0021_R", "p": "Sumit Bansal", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Agra", "z": "North", "sp": "Varun Yadav", "m": "Jul-25", "d": "23/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 10, "area": 165.7, "val": 229610}, {"q": "FY26_Q0022_R", "p": "Mr. Gulshan", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Delhi", "z": "North", "sp": "Varun Yadav", "m": "Jul-25", "d": "23/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 37, "area": 1160.4, "val": 1251889}, {"q": "FY26_Q0017_P", "p": "360 life", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Jul-25", "d": "24/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 3285, "area": 72596.1, "val": 55657708}, {"q": "FY26_Q0024_P", "p": "Ahujasons office", "seg": "Project", "mat": "Aluminium", "col": "URBAN GREY", "city": "Noida Sector-16", "z": "North", "sp": "Varun Yadav", "m": "Jul-25", "d": "28/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 140, "area": 11657.0, "val": 7598231}, {"q": "FY26_Q0023_R", "p": "Mr Balaji", "seg": "Retail", "mat": "uPVC", "col": "CLASSIC WALNUT", "city": "Chennai", "z": "South", "sp": "Rajkumar NI", "m": "Jul-25", "d": "26/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 38, "area": 916.7, "val": 1447293}, {"q": "FY26_Q0005_R", "p": "Puneet Chandra-Lot-1", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Varun Yadav", "m": "Jul-25", "d": "25/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 5, "area": 29.0, "val": 0}, {"q": "FY26_Q0006_P", "p": "Ozone Ghiloth Plant-Lot-1", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghiloth, Rajasthan", "z": "North", "sp": "YP Singh", "m": "Jul-25", "d": "25/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 41, "area": 1452.8, "val": 0}, {"q": "FY26_Q0029_P", "p": "Cybercity Trevita Project-Mock up Flat", "seg": "Project", "mat": "Aluminium", "col": "SATIN GOLD", "city": "Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Aug-25", "d": "07/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 18, "area": 54.7, "val": 766007}, {"q": "FY26_Q0027_R", "p": "Reddy Apartment", "seg": "Retail", "mat": "uPVC", "col": "CLASSIC WALNUT", "city": "Vellore", "z": "South", "sp": "Rajkumar NI", "m": "Jul-25", "d": "30/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 100, "area": 1585.9, "val": 2613786}, {"q": "FY26_Q0028_P", "p": "Kumari Nautilas", "seg": "Project", "mat": "uPVC", "col": "CLASSIC WALNUT", "city": "Bangalore", "z": "South", "sp": "Vishwanatha C", "m": "Aug-25", "d": "08/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 3300, "area": 95896.6, "val": 51563603}, {"q": "FY26_Q0028_P", "p": "Kumari Nautilas", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Bangalore", "z": "South", "sp": "Vishwanatha C", "m": "Aug-25", "d": "08/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 3300, "area": 95896.6, "val": 64432893}, {"q": "FY26_Q0031_R", "p": "Edappaly builders", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Cochin", "z": "South", "sp": "Subin Jose", "m": "Aug-25", "d": "11/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 71, "area": 3041.3, "val": 3270491}, {"q": "FY26_Q0026_R", "p": "PICACCO BUILDERS", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Cochin", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "29/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 17, "area": 703.8, "val": 967390}, {"q": "OZW-QT-00000111", "p": "Mohan Residence", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Bangalore", "z": "South", "sp": "Vishwanatha C", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 22, "area": 486.4, "val": 675789}, {"q": "FY26_Q0030_R", "p": "VIjay Puri", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "South Patel Nagar Delhi", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "08/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 8, "area": 461.0, "val": 917074}, {"q": "FY26_Q0039_R", "p": "Samarth Residency", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Pune", "z": "West", "sp": "Rupesh Jotiram Wagh", "m": "Aug-25", "d": "18/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 86, "area": 190.2, "val": 2697259}, {"q": "FY26_Q0017_P", "p": "360 life", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Jul-25", "d": "31/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 3285, "area": 72596.1, "val": 53236995}, {"q": "FY26_Q0026_R", "p": "PICACCO BUILDERS", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Cochin", "z": "South", "sp": "Subin Jose", "m": "Jul-25", "d": "31/07/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 17, "area": 703.8, "val": 925307}, {"q": "FY26_Q0025_P", "p": "Sunflower Group Housing", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghaziabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "05/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6860, "area": 216744.6, "val": 114769674}, {"q": "FY26_Q0025_P", "p": "Sunflower Group Housing", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghaziabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "05/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6860, "area": 216744.6, "val": 110744888}, {"q": "FY26_Q0005_R", "p": "Puneet Chandra-Lot-1", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "05/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 5, "area": 29.0, "val": 0}, {"q": "FY26_Q0006_P", "p": "Ozone Ghiloth Plant-Lot-2", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghiloth, Rajasthan", "z": "North", "sp": "YP Singh", "m": "Aug-25", "d": "16/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 33, "area": 1172.5, "val": 0}, {"q": "OZW-QT-00000117", "p": "Asian RSR Villas", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Hakimpet,Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Aug-25", "d": "22/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 900, "area": 21401.2, "val": 12766051}, {"q": "FY26_Q0038_R", "p": "Mr.Suresh(Abhimanyu doors)", "seg": "Retail", "mat": "Aluminium", "col": "CRYSTAL BLACK", "city": "Vijayawada", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Aug-25", "d": "20/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 46, "area": 3927.16, "val": 4909863}, {"q": "FY26_Q0034_R", "p": "IPC- TSK ,Kottayam", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Chennai", "z": "South", "sp": "Subin Jose", "m": "Aug-25", "d": "12/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 78, "area": 1243.78, "val": 1535458}, {"q": "FY26_Q0036_R", "p": "Mr Sanjay Mehra", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "143 ANM DLF 2 Gurgaon", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "14/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 19, "area": 2201.01, "val": 3013341}, {"q": "FY26_Q0006_P", "p": "Ozone Ghiloth Plant-Lot-3", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghiloth, Rajasthan", "z": "North", "sp": "YP Singh", "m": "Aug-25", "d": "16/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 26, "area": 923.0, "val": 0}, {"q": "FY26_Q0033_R", "p": "Sri Vaamana", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Vellore", "z": "South", "sp": "Rajkumar NI", "m": "Aug-25", "d": "12/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 36, "area": 742.67, "val": 1077814}, {"q": "FY26_Q0040_R", "p": "Pranav Chaudhary", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "B 1/4 pusa road new Delhi", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "20/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 123, "area": 2646.62, "val": 3026039}, {"q": "OZW-QT-00000114", "p": "Pranav Chaudhary", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "B 1/4 pusa road new Delhi", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "22/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 103, "area": 2592.014, "val": 2059103}, {"q": "FY26_Q0035_R", "p": "Mr Narula", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Mohali", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "13/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 13, "area": 490.65, "val": 664630}, {"q": "FY26_Q0043_R", "p": "Mr. RIshabh Khatri", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "H no 56 sector 17 gurgaon", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 21, "area": 1245.24, "val": 1978650}, {"q": "FY26_Q0044_R", "p": "Veranda Educational Instutition School", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "Vellore", "z": "South", "sp": "Rajkumar NI", "m": "Aug-25", "d": "22/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6, "area": 302.21, "val": 376129}, {"q": "FY26_Q0025_P", "p": "Sunflower Group Housing", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghaziabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "13/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6860, "area": 216744.6, "val": 167527943}, {"q": "FY26_Q0025_P", "p": "Sunflower Group Housing", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghaziabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "13/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6860, "area": 216744.6, "val": 118841930}, {"q": "FY26_Q0025_P", "p": "Sunflower Group Housing", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghaziabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "13/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6860, "area": 216744.6, "val": 114817145}, {"q": "FY26_Q0035_R", "p": "Mr Narula", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Mohali", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "14/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 13, "area": 490.65, "val": 610428}, {"q": "FY26_Q0033_R", "p": "Sri Vaamana", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Vellore", "z": "South", "sp": "Rajkumar NI", "m": "Aug-25", "d": "18/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 36, "area": 742.67, "val": 478751}, {"q": "FY26_Q0005_R", "p": "Puneet Chandra", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "26/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 17, "area": 278.8, "val": 176631}, {"q": "FY26_Q0036_R", "p": "Mr Sanjay Mehra", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "143 ANM DLF 2 Gurgaon", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "18/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 19, "area": 2138.96, "val": 3086741}, {"q": "FY26_Q0034_R", "p": "IPC- TSK ,Kottayam", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Chennai", "z": "South", "sp": "Subin Jose", "m": "Aug-25", "d": "18/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 78, "area": 1243.78, "val": 740092}, {"q": "FY26_Q0042_R", "p": "Amarjit", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "Mohali", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 11, "area": 624.15, "val": 720863}, {"q": "OZW-QT-00000116", "p": "Mr.Manish Mansukhani", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Pune", "z": "West", "sp": "Rupesh Jotiram Wagh", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 120, "area": 5774.12, "val": 3942470}, {"q": "OZW-QT-00000116-R1", "p": "Mr.Manish Mansukhani", "seg": "Project", "mat": "uPVC", "col": "CLASSIC WALNUT", "city": "Pune", "z": "West", "sp": "Rupesh Jotiram Wagh", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 120, "area": 5774.12, "val": 4220404}, {"q": "NA", "p": "Mr.Kapil", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "Delhi", "z": "North", "sp": "Kapil Mohan Sachdeva", "m": "Aug-25", "d": "20/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 4, "area": 273.77, "val": 371188}, {"q": "OZW-QT-00000113", "p": "Mr.Kapil", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Delhi", "z": "North", "sp": "Kapil Mohan Sachdeva", "m": "Aug-25", "d": "20/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6, "area": 63.777, "val": 112438}, {"q": "OZW-QT-00000118", "p": "Mr ss bajwa", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Mohali", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "22/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6, "area": 309.47, "val": 218134}, {"q": "FY26_Q0041_R", "p": "Mr. Arun Sood", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "7/16 Roop Nagar,Delhi", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "29/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 32, "area": 1154.14, "val": 2495485}, {"q": "OZW-QT-00000115", "p": "Mr. Romit Chhabra", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Faridabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 8, "area": 211.0, "val": 281906}, {"q": "OZW-QT-00000115-R1", "p": "Mr. Romit Chhabra", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Faridabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 3, "area": 150.0, "val": 125926}, {"q": "FY26_Q0040_R", "p": "Pranav Chaudhary", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "B 1/4 pusa road new Delhi", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 103, "area": 2587.0, "val": 3021039}, {"q": "FY26_Q0032_R", "p": "Ms. Nupur Chaudhary", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "Delhi", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "21/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 56, "area": 4163.7, "val": 3489171}, {"q": "FY26_Q0017_P", "p": "360 life", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Hyderabad", "z": "South", "sp": "Bharat Kumar Adelli", "m": "Aug-25", "d": "25/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 4425, "area": 95846.29, "val": 50644125}, {"q": "OZW-QT-00000119", "p": "Mr.Akash", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Chandigarh", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "23/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 9, "area": 432.88, "val": 460327}, {"q": "FY26_Q0045_R", "p": "Mr.Karthik", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "Bangalore", "z": "South", "sp": "Vishwanatha C", "m": "Aug-25", "d": "25/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 17, "area": 267.22, "val": 444012}, {"q": "FY26_Q0004_P", "p": "Pioneer, Senior Living", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "30/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 2397, "area": 58180.0, "val": 47454357}, {"q": "QT-00000121", "p": "Mr. Vijay", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Una (Himachal pradesh )", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "25/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 4, "area": 313.23, "val": 421703}, {"q": "QT-00000121-R1", "p": "Mr. Vijay", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Una (Himachal pradesh )", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "25/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 4, "area": 313.23, "val": 421703}, {"q": "OZW-QT-00000118-R2", "p": "Sri Vaamana", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Vellore", "z": "South", "sp": "Rajkumar NI", "m": "Aug-25", "d": "25/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 36, "area": 685.182, "val": 465900}, {"q": "OZW-QT-00000118-R2", "p": "Mr ss bajwa", "seg": "Retail", "mat": "Aluminium", "col": "FROST WHITE", "city": "Mohali", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "25/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6, "area": 319.626, "val": 133767}, {"q": "OZW-QT-00000125", "p": "Sunflower Group Housing", "seg": "Project", "mat": "uPVC", "col": "FROST WHITE", "city": "Ghaziabad", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "28/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 7448, "area": 213092.583, "val": 85634497}, {"q": "FY26_Q0005_R", "p": "Puneet Chandra", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "29/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 17, "area": 278.8, "val": 0}, {"q": "OZW-QT-00000127", "p": "Mr Narula", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Mohali", "z": "North", "sp": "Prakhar Gautam", "m": "Aug-25", "d": "28/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 14, "area": 574.862, "val": 597134}, {"q": "OZW-QT-00000123", "p": "Ms Niharika Sethi", "seg": "Retail", "mat": "uPVC", "col": "FROST WHITE", "city": "Gurugram", "z": "North", "sp": "Varun Yadav", "m": "Aug-25", "d": "28/08/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 9, "area": 226.496, "val": 301094}, {"q": "FY26_Q0046_R", "p": "Mr Gaurav", "seg": "Retail", "mat": "Aluminium", "col": "URBAN GREY", "city": "D-19 FF, GK2", "z": "North", "sp": "Varun Yadav", "m": "Sep-25", "d": "01/09/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 13, "area": 475.8, "val": 658441}, {"q": "FY26_Q0048_R", "p": "Mr ss bajwa", "seg": "Retail", "mat": "Aluminium", "col": "FROST WHITE", "city": "Mohali", "z": "North", "sp": "Prakhar Gautam", "m": "Sep-25", "d": "01/09/2025", "st": "Quote sent", "stage": "Inprogress", "qty": 6, "area": 309.5, "val": 262984}];
-const ORDERS = [{"id": 1, "z": "North", "city": "Gurugram", "cust": "Puneet Chandra", "od": "19-06-2025", "q": "", "partner": "5ISYS E Services Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Upvc Windows", "qty": 18, "st": "", "sd": "29-Jul-2025", "dd": "12-Sep-2025", "inst": "Yes", "ied": "25-Sep-2025", "hov": "", "hd": "11-Sep-2025"}, {"id": 2, "z": "North", "city": "Mohali", "cust": "Surangma", "od": "30-Jun-2025", "q": "", "partner": "Johnsun Homes-[BLU]", "sp": "Prakhar", "prod": "Internal partition", "qty": 1, "st": "", "sd": "16-Jul-2025", "dd": "31-Jul-2025", "inst": "No", "ied": "", "hov": "", "hd": ""}, {"id": 3, "z": "North", "city": "Gurugram", "cust": "Tushar Jain", "od": "04-Jul-2025", "q": "", "partner": "Alwinco Building Systems Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 5, "st": "", "sd": "22-Jul-2025", "dd": "NA", "inst": "", "ied": "7-Oct-2025", "hov": "", "hd": ""}, {"id": 4, "z": "North", "city": "Pinjor", "cust": "Rohit", "od": "22-Jul-2025", "q": "", "partner": "Johnsun Homes-[BLU]", "sp": "Prakhar", "prod": "Internal partition", "qty": 2, "st": "", "sd": "NA", "dd": "20-Sep-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 5, "z": "North", "city": "Mohali", "cust": "Manish", "od": "26-Jul-2025", "q": "", "partner": "Johnsun Homes-[BLU]", "sp": "Prakhar", "prod": "Internal partition", "qty": 4, "st": "", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 6, "z": "North", "city": "Delhi", "cust": "DDA (INA)", "od": "26-Jul-2025", "q": "", "partner": "Windowfy-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 1, "st": "", "sd": "NA", "dd": "NA", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 7, "z": "West", "city": "Pune", "cust": "Kiran Raut", "od": "01-Oct-2025", "q": "", "partner": "Home Shield Glass Solutions-[BLU]", "sp": "Rupesh Wagh", "prod": "Showers", "qty": 2, "st": "Completed & Handed over", "sd": "NA", "dd": "29-Aug-2025", "inst": "25-10-25", "ied": "25-10-25", "hov": "", "hd": "25-10-25"}, {"id": 8, "z": "South", "city": "Banglore", "cust": "Krishnamurthy", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Upvc Windows", "qty": 15, "st": "Completed & Handed over", "sd": "31-1-26", "dd": "28/2/26", "inst": "Yes", "ied": "9-Mar-2026", "hov": "yes", "hd": "28/5/26"}, {"id": 9, "z": "South", "city": "Hyderabad", "cust": "Santhosh", "od": "11-Feb-2026", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 11, "st": "Handover by dealer", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 10, "z": "South", "city": "Hyderabad", "cust": "Spartan", "od": "12-Feb-2026", "q": "", "partner": "Spartan Systems", "sp": "Bharata H S", "prod": "Internal partition", "qty": 1, "st": "Handover by dealer", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 11, "z": "North", "city": "Mohali", "cust": "Nimrat kaur", "od": "11-Aug-2025", "q": "", "partner": "Johnsun Homes-[BLU]", "sp": "Prakhar", "prod": "Internal partition", "qty": 3, "st": "", "sd": "NA", "dd": "26-Aug-2025", "inst": "", "ied": "NA", "hov": "", "hd": "NA"}, {"id": 12, "z": "North", "city": "Mohali", "cust": "Anuj sharma", "od": "05-Aug-2025", "q": "", "partner": "Johnsun Homes-[BLU]", "sp": "Prakhar", "prod": "Internal partition", "qty": 4, "st": "", "sd": "10-Nov-2025", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 13, "z": "South", "city": "Hyderabad", "cust": "Venkatesh", "od": "16-Feb-2026", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 2, "st": "Handover by dealer", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 14, "z": "North", "city": "Gurugram", "cust": "Amandeep Mittal", "od": "02-Sep-2025", "q": "", "partner": "Alwinco Building Systems Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 9, "st": "", "sd": "NA", "dd": "", "inst": "", "ied": "3-Nov-2025", "hov": "", "hd": "5-Nov-2025"}, {"id": 15, "z": "North", "city": "Chandigarh", "cust": "Hans Construction", "od": "01-Sep-25", "q": "", "partner": "VR Design Solutions-[BLU_STUDIO]", "sp": "Prakhar", "prod": "Upvc Windows", "qty": 17, "st": "", "sd": "8-Sep-2025", "dd": "13-10-2025", "inst": "", "ied": "21-Nov-25", "hov": "", "hd": "10-Feb-2026"}, {"id": 16, "z": "South", "city": "Hyderabad", "cust": "Ajay", "od": "17-Feb-2026", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 2, "st": "Handover by dealer", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 17, "z": "North", "city": "Delhi", "cust": "Gorav Kukkar", "od": "06-Sep-25", "q": "", "partner": "Bhagyashree Enterprises-[BLU_STUDIO]", "sp": "Varun Yadav", "prod": "Alu doors/Windows", "qty": 14, "st": "", "sd": "10-Sep-2025", "dd": "18-Nov-2025", "inst": "", "ied": "WIP", "hov": "", "hd": "27-Dec-2025"}, {"id": 18, "z": "North", "city": "Delhi", "cust": "Nikhil Sachdeva", "od": "05-Sep-25", "q": "OZW-QT-00000140", "partner": "Bhagyashree Enterprises-[BLU_STUDIO]", "sp": "Varun", "prod": "Upvc Windows", "qty": 1, "st": "", "sd": "10-Sep-2025", "dd": "9-Oct-2025", "inst": "31-10-25", "ied": "31-10-25", "hov": "Yes", "hd": "31-10-25"}, {"id": 19, "z": "North", "city": "Aligarh", "cust": "Agarwal Kitchenwares", "od": "05-Sep-2025", "q": "", "partner": "Agarwal Kitchenwares-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 26, "st": "", "sd": "30-Sep-2025", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 20, "z": "South", "city": "Chennai", "cust": "Arvind Eye", "od": "29-Nov-2025", "q": "OZW-QT-00000375-R1", "partner": "Homepoint-[BLU_STUDIO]", "sp": "Rajkumar", "prod": "Upvc Windows", "qty": 7, "st": "Completed & Handed over", "sd": "8-Jan-2026", "dd": "27-Feb-2026", "inst": "Yes", "ied": "9-Mar-2026", "hov": "Yes", "hd": "12-Mar-2026"}, {"id": 21, "z": "West", "city": "Pen", "cust": "Sathe Schemes", "od": "22-Sep-2025", "q": "", "partner": "Home Shield Glass Solutions-[BLU]", "sp": "Rupesh Wagh", "prod": "Showers", "qty": 3, "st": "Completed & Handed over", "sd": "1-Oct-2025", "dd": "15-01-2026", "inst": "15-1-26", "ied": "15-1-26", "hov": "", "hd": "28-3-26"}, {"id": 22, "z": "South", "city": "Hyderabad", "cust": "Deepak Agarwal", "od": "26-Aug-2025", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 5, "st": "Handover by dealer", "sd": "NA", "dd": "9-Sep-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 23, "z": "South", "city": "Hyderabad", "cust": "Nagababu", "od": "14-Aug-2025", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 5, "st": "Handover by dealer", "sd": "NA", "dd": "25-Aug-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 24, "z": "North", "city": "Delhi", "cust": "GJ ENGINEERING & SOLUTIONS / Pankaj Sharma", "od": "", "q": "", "partner": "Bhagyashree Enterprises-[BLU_STUDIO]", "sp": "Varun Yadav", "prod": "Upvc Windows", "qty": 9, "st": "", "sd": "24-Oct-2025", "dd": "5-Dec-2025", "inst": "", "ied": "18-Dec-2025", "hov": "", "hd": "19-Dec-2025"}, {"id": 25, "z": "North", "city": "Delhi", "cust": "S-CCI INDIA PRIVATE LIMITED", "od": "", "q": "", "partner": "Nahar Enterprise-[BLU_STUDIO]", "sp": "Varun Yadav", "prod": "Upvc Windows", "qty": 11, "st": "", "sd": "7-Oct-2025", "dd": "23-Nov-2025", "inst": "", "ied": "10-Dec-2025", "hov": "", "hd": "26-Dec-2025"}, {"id": 26, "z": "North", "city": "Alwar", "cust": "Mrs. Anurag Jain", "od": "", "q": "", "partner": "Anurag Jain-[BLU]", "sp": "Varun Yadav", "prod": "Alu doors/Windows", "qty": 31, "st": "", "sd": "25-Nov-2025", "dd": "30-Jan-2026", "inst": "30-Feb-2026", "ied": "30-Feb-2026", "hov": "Yes", "hd": "20-May-2026"}, {"id": 27, "z": "North", "city": "Una himachal pardesh", "cust": "Vijay", "od": "", "q": "", "partner": "VR Design Solutions-[BLU_STUDIO]", "sp": "Prakhar", "prod": "Upvc Windows", "qty": 5, "st": "", "sd": "12-Oct-2025", "dd": "20-Nov-2025", "inst": "", "ied": "30-Nov-2025", "hov": "", "hd": "10-Feb-2026"}, {"id": 28, "z": "West", "city": "Mumbai", "cust": "Oberoi Trident", "od": "", "q": "", "partner": "EIH Limited/Trident Bandra Kurla-[BLU]", "sp": "Rupesh Wagh", "prod": "Alu doors/Windows", "qty": 3, "st": "Completed & Handed over", "sd": "9-Oct-2025", "dd": "14-Nov-2025", "inst": "13-Dec-2025", "ied": "13-Dec-2025", "hov": "", "hd": "13-Dec-2025"}, {"id": 29, "z": "West", "city": "Satara", "cust": "Mahesh Kokade", "od": "01-Oct-2025", "q": "", "partner": "Home Shield Glass Solutions-[BLU]", "sp": "Rupesh Wagh", "prod": "Internal partition", "qty": 2, "st": "Completed & Handed over", "sd": "10-Oct-2025", "dd": "22-10-2025", "inst": "8-Nov-2025", "ied": "30-Oct-2025", "hov": "", "hd": "15-12-25"}, {"id": 30, "z": "West", "city": "Pune", "cust": "Ar.Santosh Hadawale", "od": "10-Oct-2025", "q": "", "partner": "Home Shield Glass Solutions-[BLU]", "sp": "Rupesh Wagh", "prod": "Showers", "qty": 2, "st": "Completed & Handed over", "sd": "10-Oct-2025", "dd": "24-Oct-2025", "inst": "5-11-25", "ied": "5-11-25", "hov": "", "hd": "7-11-25"}, {"id": 31, "z": "North", "city": "Delhi", "cust": "Mr.Anurag Jain", "od": "", "q": "", "partner": "Bhagyashree Enterprises-[BLU_STUDIO]", "sp": "Varun Yadav", "prod": "Alu doors/Windows", "qty": 10, "st": "", "sd": "18-Oct-2025", "dd": "26-Nov-2025", "inst": "", "ied": "30-Nov-2025", "hov": "", "hd": "7-Jan-2026"}, {"id": 32, "z": "West", "city": "Pune", "cust": "KK Market", "od": "18-Oct-2025", "q": "", "partner": "Harmony Windows-[BLU_STUDIO]", "sp": "Rupesh Wagh", "prod": "Office Partition", "qty": 4, "st": "Completed & Handed over", "sd": "NA", "dd": "30-Oct-2025", "inst": "14-Jan-2026", "ied": "18-Dec-2025", "hov": "", "hd": "9-2-26"}, {"id": 33, "z": "South", "city": "Bangalore", "cust": "Mr. Vinod", "od": "27-Feb-2026", "q": "OZW-QT-00000929-R2", "partner": "Apex Design Studio", "sp": "Vishwanatha C", "prod": "Alu doors/Windows", "qty": 37, "st": "Material expected delivery by tomorrow", "sd": "03-12-2026", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 34, "z": "North", "city": "Noida", "cust": "Dr Kanika", "od": "24-Oct-2025", "q": "", "partner": "Shivam Enterprises-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 12, "st": "", "sd": "NA", "dd": "21-Nov-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 35, "z": "South", "city": "Bangalore", "cust": "Ajay Raja Reddy", "od": "28-Feb-2026", "q": "OZW-QT-00001103-R1", "partner": "Apex Design Studio", "sp": "Vishwanatha C", "prod": "Upvc Windows", "qty": 17, "st": "Reorder material received. Handover planned this week", "sd": "13-3-26", "dd": "23-Apr-2026", "inst": "Yes", "ied": "2-5-26", "hov": "", "hd": ""}, {"id": 36, "z": "South", "city": "Bangalore", "cust": "Mr. Venkatesh", "od": "28-Feb-2026", "q": "OZW-QT-00000922", "partner": "Apex Design Studio", "sp": "Vishwanatha C", "prod": "Upvc Windows", "qty": 80, "st": "Site is not ready for measurement", "sd": "NA", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 37, "z": "South", "city": "Bangalore", "cust": "Vivesh", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Internal partition", "qty": 3, "st": "Handover by dealer", "sd": "7-Oct-2025", "dd": "", "inst": "", "ied": "NA", "hov": "Yes", "hd": "NA"}, {"id": 38, "z": "South", "city": "Bangalore", "cust": "Vivek", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Internal partition", "qty": 4, "st": "Handover by dealer", "sd": "NA", "dd": "6-Sep-2025", "inst": "", "ied": "NA", "hov": "Yes", "hd": "NA"}, {"id": 39, "z": "North", "city": "Mohali sector 82", "cust": "VR Design Solutions", "od": "20-Oct-2025", "q": "", "partner": "VR Design Solutions-[BLU_STUDIO]", "sp": "Prakhar", "prod": "Internal partition", "qty": 126, "st": "", "sd": "NA", "dd": "5-Nov-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 40, "z": "North", "city": "Chandigarh", "cust": "Akshay/Sumar", "od": "", "q": "", "partner": "VR Design Solutions-[BLU_STUDIO]", "sp": "Prakhar", "prod": "Alu doors/Windows", "qty": 12, "st": "", "sd": "26-Feb-2026", "dd": "30-Mar-2026", "inst": "10-Apr-2026", "ied": "10-Apr-2026", "hov": "Yes", "hd": "10-Apr-2026"}, {"id": 41, "z": "South", "city": "Bangalore", "cust": "manali", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Internal partition", "qty": 1, "st": "Handover by dealer", "sd": "NA", "dd": "6-Sep-2025", "inst": "", "ied": "01-10-2025", "hov": "Yes", "hd": "01-10-2025"}, {"id": 42, "z": "North", "city": "Uttar Pradesh", "cust": "Door bhai", "od": "30-Oct-2025", "q": "", "partner": "Door Bhai Solutions Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 0, "st": "", "sd": "NA", "dd": "20-Nov-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 43, "z": "North", "city": "Uttar Pradesh", "cust": "Door bhai", "od": "10-Nov-2025", "q": "", "partner": "Door Bhai Solutions Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 0, "st": "", "sd": "NA", "dd": "12-Nov-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 44, "z": "North", "city": "Uttar Pradesh", "cust": "Door bhai", "od": "10-Nov-2025", "q": "", "partner": "Door Bhai Solutions Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 11, "st": "", "sd": "NA", "dd": "11-Nov-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 45, "z": "South", "city": "Tellapur", "cust": "Perth", "od": "29-Oct-2025", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 3, "st": "Handover by dealer", "sd": "NA", "dd": "4-Nov-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 46, "z": "North", "city": "Delhi", "cust": "Gorav Kukkar", "od": "11-Nov-2025", "q": "", "partner": "Bhagyashree Enterprises-[BLU_STUDIO]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 19, "st": "", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 47, "z": "North", "city": "Delhi", "cust": "Virender Sehwag(Cricketer)", "od": "07-Nov-2025", "q": "", "partner": "Moksh Enterprises-[BLU_STUDIO]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 1, "st": "", "sd": "", "dd": "18-Nov-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 48, "z": "North", "city": "Panchkula", "cust": "Himanshu (BISIL)", "od": "06-Nov-2025", "q": "", "partner": "Johnsun Homes-[BLU]", "sp": "Prakhar", "prod": "Internal partition", "qty": 4, "st": "", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 49, "z": "North", "city": "Panchkula", "cust": "vishal sharda", "od": "10-Nov-2025", "q": "", "partner": "Johnsun Homes-[BLU]", "sp": "Prakhar", "prod": "Internal partition", "qty": 2, "st": "", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 50, "z": "South", "city": "Bangalore", "cust": "Gaurav Garg", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Internal partition", "qty": 2, "st": "Handover by dealer", "sd": "NA", "dd": "20-Sep-2025", "inst": "", "ied": "25-10-2025", "hov": "Yes", "hd": "25-10-2025"}, {"id": 51, "z": "South", "city": "Jubilee hills", "cust": "Durga Prasad", "od": "29-Oct-2025", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 2, "st": "Handover by dealer", "sd": "NA", "dd": "3-Nov-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 52, "z": "South", "city": "Bangalore", "cust": "Reflector Ventures", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Internal partition", "qty": 3, "st": "Handover by dealer", "sd": "NA", "dd": "9-Oct-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 53, "z": "South", "city": "Bangalore", "cust": "Srinivas Sastry", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Internal partition", "qty": 2, "st": "Handover by dealer", "sd": "17-Oct-2025", "dd": "24-Oct-2025", "inst": "", "ied": "5-Nov-2025", "hov": "Yes", "hd": ""}, {"id": 54, "z": "North", "city": "Uttar Pradesh", "cust": "Door bhai", "od": "14-Nov-2025", "q": "", "partner": "Door Bhai Solutions Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 0, "st": "", "sd": "NA", "dd": "20-11-25", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 55, "z": "North", "city": "Haryana", "cust": "Manish Kumar", "od": "14-Nov-2025", "q": "", "partner": "Alwinco Building Systems Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 0, "st": "", "sd": "NA", "dd": "27-11-25", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 56, "z": "North", "city": "Uttar Pradesh", "cust": "Door bhai", "od": "17-Nov-2025", "q": "", "partner": "Door Bhai Solutions Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 3, "st": "", "sd": "NA", "dd": "9-Dec-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 57, "z": "South", "city": "Bangalore", "cust": "Jagadish", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Internal partition", "qty": 1, "st": "Handover by dealer", "sd": "NA", "dd": "10-Oct-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 58, "z": "South", "city": "Bangalore", "cust": "Nishanth", "od": "", "q": "", "partner": "Apex Design Studio-[BLU_STUDIO]", "sp": "Vishwanatha C", "prod": "Internal partition", "qty": 1, "st": "Handover by dealer", "sd": "NA", "dd": "27-Oct-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 59, "z": "North", "city": "Gurugram", "cust": "Mrs Shalini Butan", "od": "", "q": "", "partner": "Alwinco Building Systems Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Upvc Windows", "qty": 2, "st": "", "sd": "11-Nov-2025", "dd": "23-Jan-2026", "inst": "", "ied": "30-Jan-2026", "hov": "", "hd": "3-Feb-2026"}, {"id": 60, "z": "North", "city": "Delhi", "cust": "Raja Jain", "od": "23-Nov-2025", "q": "OZW-QT-00000331", "partner": "Moksh Enterprises-[BLU_STUDIO]", "sp": "Varun Yadav", "prod": "Alu doors/Windows", "qty": 29, "st": "", "sd": "24-Dec-2025", "dd": "06-Jan-2026", "inst": "30-05-2026", "ied": "30-05-2026", "hov": "No", "hd": ""}, {"id": 61, "z": "North", "city": "Delhi", "cust": "Raja Jain", "od": "23-Nov-2025", "q": "", "partner": "Moksh Enterprises-[BLU_STUDIO]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 7, "st": "", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 62, "z": "South", "city": "Hyderabad", "cust": "Spartan Systems", "od": "29-Oct-2025", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 3, "st": "Handover by dealer", "sd": "NA", "dd": "19-Nov-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 63, "z": "North", "city": "Himachal Pardesh", "cust": "Vijay", "od": "24-Nov-2025", "q": "", "partner": "Johnsun Homes-[BLU]", "sp": "Prakhar", "prod": "Internal partition", "qty": 2, "st": "", "sd": "NA", "dd": "25-11-25", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 64, "z": "South", "city": "Telangana", "cust": "Kun Enterprises", "od": "31-Oct-2025", "q": "", "partner": "Kun Enterprises", "sp": "Bharata H S", "prod": "Internal partition", "qty": 2, "st": "Handover by dealer", "sd": "NA", "dd": "6-Nov-2025", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 65, "z": "North", "city": "Ghaziabad", "cust": "Mr Sunflower Group Housing Mock-up", "od": "", "q": "", "partner": "AU Real Estate Services Private Limited", "sp": "Varun Yadav", "prod": "Alu doors/Windows", "qty": 1, "st": "", "sd": "19-Nov-2025", "dd": "13-Dec-2025", "inst": "", "ied": "14-Dec-2025", "hov": "Yes", "hd": "15-Dec-2025"}, {"id": 66, "z": "South", "city": "Chennai", "cust": "Mr Arsad", "od": "04-Feb-2026", "q": "OZW-QT-00000508", "partner": "Homepoint", "sp": "Rajkumar", "prod": "Alu doors/Windows", "qty": 2, "st": "Completed & Handed over", "sd": "4-2-26", "dd": "27-3-26", "inst": "Yes", "ied": "02/04/2026", "hov": "Yes", "hd": "03/04/2026"}, {"id": 67, "z": "South", "city": "Chennai", "cust": "M/S.SPAIS INDUSTRIES", "od": "27-Feb-2026", "q": "OZW-QT-00001017-R2", "partner": "Homepoint", "sp": "Rajkumar", "prod": "Upvc Windows", "qty": 3, "st": "Completed & Handed over", "sd": "27-2-26", "dd": "27-3-26", "inst": "Yes", "ied": "03/04/2026", "hov": "Yes", "hd": "09/04/2026"}, {"id": 68, "z": "West", "city": "Pune", "cust": "KK Market", "od": "02-Dec-2025", "q": "", "partner": "Harmony Windows-[BLU_STUDIO]", "sp": "Rupesh Wagh", "prod": "Office Partition", "qty": 2, "st": "Completed & Handed over", "sd": "NA", "dd": "5-Dec-2025", "inst": "14-Jan-2026", "ied": "18-Dec-2025", "hov": "", "hd": "9-2-26"}, {"id": 69, "z": "North", "city": "Uttar Pradesh", "cust": "Door bhai", "od": "02-Dec-2025", "q": "", "partner": "Door Bhai Solutions Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 16, "st": "", "sd": "NA", "dd": "3-Dec-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 70, "z": "West", "city": "Pune", "cust": "KK Market", "od": "03-Dec-2025", "q": "", "partner": "Harmony Windows-[BLU_STUDIO]", "sp": "Rupesh Wagh", "prod": "Office Partition", "qty": 1, "st": "Completed & Handed over", "sd": "NA", "dd": "5-Dec-2025", "inst": "14-Jan-2026", "ied": "18-Dec-2025", "hov": "", "hd": "9-2-26"}, {"id": 71, "z": "North", "city": "Uttar Pradesh", "cust": "Door bhai", "od": "08-Dec-2025", "q": "", "partner": "Door Bhai Solutions Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 0, "st": "", "sd": "NA", "dd": "11-Dec-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 72, "z": "", "city": "Ghiloth", "cust": "Ozone Ghiloth Plant", "od": "", "q": "", "partner": "Internal Plant", "sp": "saurabh", "prod": "Alu doors/Windows", "qty": 14, "st": "", "sd": "25-Nov-2025", "dd": "", "inst": "", "ied": "20-Dec-2025", "hov": "", "hd": "24-Dec-2025"}, {"id": 73, "z": "North", "city": "Bhubaneshwar", "cust": "RPRC-Mr. Probir Podder", "od": "09-Dec-2025", "q": "", "partner": "Urban Fenestration Private Limited-[BLU]", "sp": "Avijit Praharaj", "prod": "Internal partition", "qty": 46, "st": "", "sd": "NA", "dd": "18-Dec-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 74, "z": "North", "city": "Uttar Pradesh", "cust": "Door bhai", "od": "10-Dec-2025", "q": "", "partner": "Door Bhai Solutions Private Limited-[BLU]", "sp": "Varun Yadav", "prod": "Internal partition", "qty": 16, "st": "", "sd": "NA", "dd": "13-Dec-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 75, "z": "South", "city": "Hyderabad", "cust": "Kartik", "od": "13-Nov-2025", "q": "", "partner": "Spartan Systems-[BLU_STUDIO]", "sp": "Bharata H S", "prod": "Showers", "qty": 1, "st": "Handover by dealer", "sd": "NA", "dd": "14-11-25", "inst": "", "ied": "", "hov": "Yes", "hd": ""}, {"id": 76, "z": "North", "city": "Bhubaneshwar", "cust": "RPRC-Mr. Probir Podder", "od": "11-Dec-2025", "q": "", "partner": "Urban Fenestration Private Limited-[BLU]", "sp": "Avijit Praharaj", "prod": "Internal partition", "qty": 0, "st": "", "sd": "NA", "dd": "13-Dec-2025", "inst": "", "ied": "", "hov": "", "hd": ""}, {"id": 77, "z": "South", "city": "Chennai", "cust": "Home Point", "od": "12-Dec-2025", "q": "", "partner": "Homepoint-[BLU_STUDIO]", "sp": "Rajkumar", "prod": "Glass", "qty": 0, "st": "", "sd": "", "dd": "", "inst": "", "ied": "", "hov": "", "hd": ""}];
-const PROD_MTD = {"planned": 4100, "actual": 916, "retail": 697, "project": 219, "sft": 23567, "drawingsPlanned": 2050, "drawingsActual": 1057, "otm": 528, "delay": 388, "wip": 2343, "closingWCS": 2359, "reordersPending": 208, "reasons": {"Glass delay": 226, "Glass broken / reject": 14, "Design issue": 10, "Drawing issue": 0, "Production delay": 0, "Material not available": 0}};
-const PROD_DAILY = [["1-Apr", 0, 1], ["2-Apr", 0, 0], ["3-Apr", 3, 0], ["4-Apr", 0, 0], ["6-Apr", 0, 2], ["7-Apr", 1, 0], ["8-Apr", 0, 29], ["9-Apr", 0, 0], ["10-Apr", 0, 0], ["11-Apr", 3, 7], ["13-Apr", 24, 21], ["14-Apr", 14, 20], ["15-Apr", 1, 3], ["16-Apr", 6, 14], ["17-Apr", 8, 2], ["18-Apr", 10, 3], ["20-Apr", 2, 0], ["21-Apr", 1, 1], ["22-Apr", 2, 0], ["23-Apr", 0, 0], ["24-Apr", 2, 0], ["25-Apr", 0, 1], ["27-Apr", 0, 0], ["28-Apr", 0, 0], ["29-Apr", 0, 0], ["30-Apr", 1, 3], ["1-May", 0, 0], ["2-May", 3, 0], ["3-May", 1, 0], ["4-May", 0, 0], ["5-May", 0, 0], ["6-May", 8, 1], ["7-May", 11, 0], ["8-May", 13, 0], ["9-May", 15, 3], ["10-May", 0, 0], ["11-May", 15, 1], ["12-May", 20, 15], ["13-May", 25, 3], ["14-May", 26, 4], ["15-May", 29, 0], ["16-May", 30, 0], ["17-May", 0, 0], ["18-May", 24, 0], ["19-May", 28, 0]];
-/* ============ HELPERS ============ */
-const BAD = new Set(['','na','n/a','nil','wip','on hold','-','--','pending','tbd','yet to start','not started']);
-function realDate(s){ if(s==null) return false; const t=String(s).trim().toLowerCase(); if(BAD.has(t)) return false; return /\d/.test(t); }
-function realVal(v){ const n=Number(v); return isFinite(n)&&n>0; }
-function inr(n){
-  n=Number(n)||0;
-  if(n>=1e7) return '₹'+(n/1e7).toFixed(2)+' Cr';
-  if(n>=1e5) return '₹'+(n/1e5).toFixed(2)+' L';
-  if(n>=1e3) return '₹'+(n/1e3).toFixed(1)+'K';
-  return '₹'+n.toFixed(0);
-}
-function num(n){ return (Number(n)||0).toLocaleString('en-IN'); }
-const MONTHS=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
-const MMAP={jan:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',may:'May',jun:'Jun',jul:'Jul',aug:'Aug',sep:'Sep',oct:'Oct',nov:'Nov',dec:'Dec'};
-// quotation month "May-25" -> {key:'May-25', mon:'May'}
-function qMonth(m){ if(!m) return null; const p=String(m).trim(); return p||null; }
-// order date -> "Mon-YY" key, e.g. 19-Jun-2025, 01-Sep-25, 28/2/26, 31-1-26
-function odMonth(od){
-  if(!realDate(od)) return null;
-  let s=String(od).trim();
-  // DD-Mon-YYYY or DD-Mon-YY
-  let m=s.match(/[A-Za-z]{3,}/);
-  if(m){ const mo=MMAP[m[0].slice(0,3).toLowerCase()]; const y=(s.match(/(\d{2,4})\s*$/)||[])[1]||''; const yy=y.length>=2?y.slice(-2):y; return mo?mo+'-'+yy:null; }
-  // numeric DD-MM-YY or DD/MM/YY or DD-MM-YYYY
-  const parts=s.split(/[-\/]/).map(x=>x.trim()).filter(Boolean);
-  if(parts.length>=2){ const mi=parseInt(parts[1],10); if(mi>=1&&mi<=12){ const mo=MONTHS[(mi+8)%12]; let y=parts[2]||''; y=y.length>=2?y.slice(-2):y; return mo+'-'+y; } }
-  return null;
-}
-function monKey(label){ // 'May-25' -> sortable index within Apr-Mar FY
-  const mo=label.split('-')[0]; const i=MONTHS.indexOf(mo); const yy=parseInt(label.split('-')[1]||'25',10);
-  return yy*100 + (i<0?99:i);
-}
-
-/* ============ ORDER DERIVED FLAGS ============ */
-function isDispatched(o){ return realDate(o.dd) || /completed\s*&\s*handed\s*over/i.test(o.st||''); }
-function isInstalled(o){
-  const c=String(o.inst||'').trim().toLowerCase();
-  if(c==='yes') return true;
-  if(realDate(o.inst)) return true;
-  if(/completed\s*&\s*handed\s*over/i.test(o.st||'')) return true;
-  return false;
-}
-function isSurveyed(o){ return realDate(o.sd); }
-function isStarted(o){ return isInstalled(o) || realDate(o.ied) || isDispatched(o); }
-function isComplete(o){ return /completed\s*&\s*handed\s*over/i.test(o.st||''); }
-
-/* ============ FILTER STATE ============ */
-const F={month:'',zone:'',product:'',seg:'',partner:'',sp:'',city:'',status:'',q:''};
-
-function uniq(arr){ return [...new Set(arr.filter(x=>x&&String(x).trim()))].sort(); }
-function fillSel(id,vals,label){
-  const el=document.getElementById(id); if(!el) return;
-  el.innerHTML='<option value="">'+label+'</option>'+vals.map(v=>'<option value="'+String(v).replace(/"/g,'&quot;')+'">'+v+'</option>').join('');
-}
-function populateFilters(){
-  const oMonths=uniq(ORDERS.map(o=>odMonth(o.od)).filter(Boolean));
-  const qMonths=uniq(QUOTATIONS.map(q=>q.m).filter(Boolean));
-  const months=uniq([...oMonths,...qMonths]).sort((a,b)=>monKey(a)-monKey(b));
-  fillSel('fMonth',months,'All Months');
-  fillSel('fZone',uniq([...ORDERS.map(o=>o.z),...QUOTATIONS.map(q=>q.z)]),'All Zones');
-  fillSel('fProduct',uniq(ORDERS.map(o=>o.prod)),'All Products');
-  fillSel('fSeg',uniq(QUOTATIONS.map(q=>q.seg)),'All Segments');
-  fillSel('fPartner',uniq(ORDERS.map(o=>o.partner)),'All Partners');
-  fillSel('fSp',uniq([...ORDERS.map(o=>o.sp),...QUOTATIONS.map(q=>q.sp)]),'All Salespersons');
-  fillSel('fCity',uniq([...ORDERS.map(o=>o.city),...QUOTATIONS.map(q=>q.city)]),'All Cities');
-  fillSel('fStatus',uniq(ORDERS.map(o=>o.st||'(blank)')).filter(x=>x!=='(blank)').concat(['Completed & Handed over','Handover by dealer']).filter((v,i,a)=>a.indexOf(v)===i),'All Statuses');
-}
-
-/* ============ FILTER APPLICATION ============ */
-function matchQ(str){ if(!F.q) return true; const s=F.q.toLowerCase(); return str.toLowerCase().includes(s); }
-function filterOrders(){
-  return ORDERS.filter(o=>{
-    if(F.zone && o.z!==F.zone) return false;
-    if(F.product && o.prod!==F.product) return false;
-    if(F.partner && o.partner!==F.partner) return false;
-    if(F.sp && o.sp!==F.sp) return false;
-    if(F.city && o.city!==F.city) return false;
-    if(F.month && odMonth(o.od)!==F.month) return false;
-    if(F.status && (o.st||'')!==F.status) return false;
-    if(F.q){
-      const blob=[o.cust,o.partner,o.sp,o.city,o.prod,o.q,o.st,o.z,'order '+o.id,'#'+o.id].join(' ');
-      if(!matchQ(blob)) return false;
-    }
-    return true;
-  });
-}
-function filterQuotes(){
-  return QUOTATIONS.filter(q=>{
-    if(F.zone && q.z!==F.zone) return false;
-    if(F.seg && q.seg!==F.seg) return false;
-    if(F.sp && q.sp!==F.sp) return false;
-    if(F.city && q.city!==F.city) return false;
-    if(F.month && q.m!==F.month) return false;
-    // product filter: quotations have material not product -> only constrain if value matches a material
-    if(F.product){ const pm=F.product.toLowerCase(); if(!(q.mat&&pm.includes(q.mat.toLowerCase()))&&!(q.mat&&q.mat.toLowerCase().includes(pm.split(' ')[0]))) { /* leave quotes unfiltered by product unless material match */ } }
-    if(F.q){
-      const blob=[q.q,q.p,q.city,q.sp,q.mat,q.seg,q.col,q.st,q.z].join(' ');
-      if(!matchQ(blob)) return false;
-    }
-    return true;
-  });
-}
-
-/* ============ CARD BUILDERS ============ */
-function kpi(o){
-  const cls=o.cls?(' '+o.cls):''; const sm=o.sm?' sm':''; const big=o.big?' big':'';
-  const ic=o.ic?('<div class="kIc '+(o.icc||'')+'">'+o.ic+'</div>'):'';
-  let val = o.na ? '<div class="kVal na">'+(o.na)+'</div>' : '<div class="kVal">'+o.val+'</div>';
-  const sub=o.sub?('<div class="kSub">'+o.sub+'</div>'):'';
-  const pend=o.pend?('<div class="pend">⚠ needs Order Tracker</div>'):'';
-  return '<div class="kpi'+cls+sm+big+'"><div class="kTop"><div class="kLbl">'+o.lbl+'</div>'+ic+'</div>'+val+sub+pend+'</div>';
-}
-const IC={
-  quote:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
-  order:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>',
-  survey:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
-  prod:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M4 20V8l5 4V8l5 4V8l5 4v8"/></svg>',
-  disp:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
-  install:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
-  money:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
-  box:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>',
-  clock:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
-  pct:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>'
+var CONFIG = {
+  MASTER_SHEET: 'Product Samples with FG Code',
+  HEADER_ROW: 4, FIRST_DATA_ROW: 5, LAST_DATA_ROW: 39,
+  COLOUR_COL_START: 10, COLOUR_COL_END: 16,
+  RESPONSE_SHEET: 'Requests',                 // <-- your response tab name
+  SAMPLE_TEAM_EMAIL: 'sampleteam@ozone-india.com',   // <-- CHANGE ME
+  ORG_NAME: 'Ozone Overseas Pvt. Ltd.'
 };
 
-/* ============ FLOW RIBBON ============ */
-const STAGE_COLORS=['#2D6BD4','#6B4FD4','#E0A500','#E8A33D','#1F9D6B','#0E8C6A'];
-function renderFlow(d){
-  const stages=[
-    {lbl:'Quotation',n:d.quoteCount,sub:inr(d.quoteVal),tgt:'s-quote'},
-    {lbl:'Orders',n:d.orderCount,sub:num(d.orderQty)+' units',tgt:'s-order'},
-    {lbl:'Survey',n:d.surveyAssigned,sub:num(d.surveyQty)+' units',tgt:'s-survey'},
-    {lbl:'Production',n:d.prodActual,sub:'of '+num(d.prodPlanned)+' plan',tgt:'s-prod'},
-    {lbl:'Dispatch',n:d.dispCount,sub:num(d.dispQty)+' units',tgt:'s-dispatch'},
-    {lbl:'Installation',n:d.instCompleted,sub:num(d.instQty)+' units',tgt:'s-install'}
-  ];
-  let html='';
-  stages.forEach((s,i)=>{
-    html+='<div class="stage" onclick="document.getElementById(\''+s.tgt+'\').scrollIntoView()">'
-      +'<div class="sIc" style="background:'+STAGE_COLORS[i]+'">'+(i+1)+'</div>'
-      +'<div class="sNum">'+num(s.n)+'</div><div class="sLbl">'+s.lbl+'</div><div class="sSub">'+s.sub+'</div></div>';
-    if(i<stages.length-1){
-      const a=stages[i].n, b=stages[i+1].n;
-      const pct=(a>0&&b<=a)?Math.round(b/a*100)+'%':'';
-      html+='<div class="conn"><div class="pct">'+pct+'</div><div class="arr"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>';
-    }
-  });
-  document.getElementById('flowRow').innerHTML=html;
+// order == column order in the sheet. Keys map to the fields the form sends.
+var COLUMN_HEADERS = [
+  ['Request ID','requestId'], ['Request Date','requestDate'], ['Employee Name','empName'],
+  ['Dealer Code','dealer'], ['Receiver Name','receiver'], ['Contact Number','contact'],
+  ['State','state'], ['Shipping Address','address'], ['SO Number','soNumber'],
+  ['Line No','lineNo'], ['Material','material'], ['Type','type'], ['Series','series'],
+  ['Range','range'], ['Product','product'], ['Profile Nature','glass'], ['Colour','colour'],
+  ['FG Code','fgCode'], ['Product Cost','cost'], ['CS Width','csWidth'],
+  ['CS Height','csHeight'], ['Required Quantity','qty']
+];
+
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Ozone · Sample Request')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-/* ============ COMPUTE ============ */
-function compute(){
-  const Q=filterQuotes(), O=filterOrders();
-  // quotation metrics
-  const qNos=uniq(Q.map(q=>q.q).filter(x=>x&&x!=='NA'));
-  const qVals=Q.filter(q=>realVal(q.val));
-  const quoteVal=qVals.reduce((s,q)=>s+q.val,0);
-  const quoteQty=Q.reduce((s,q)=>s+(q.qty||0),0);
-  const valArr=qVals.map(q=>q.val);
-  // orders
-  const orderQty=O.reduce((s,o)=>s+(o.qty||0),0);
-  const completed=O.filter(isComplete), pendingOrd=O.filter(o=>!isComplete(o));
-  // survey
-  const surv=O.filter(isSurveyed);
-  const surveyQty=surv.reduce((s,o)=>s+(o.qty||0),0);
-  // dispatch
-  const disp=O.filter(isDispatched);
-  const dispQty=disp.reduce((s,o)=>s+(o.qty||0),0);
-  // install
-  const inst=O.filter(isInstalled), started=O.filter(isStarted);
-  const instQty=inst.reduce((s,o)=>s+(o.qty||0),0);
-  return {
-    Q,O,
-    quoteCount:qNos.length, quoteRows:Q.length, quoteVal, quoteQty,
-    quoteAvg: qVals.length?quoteVal/qVals.length:0,
-    quoteHi: valArr.length?Math.max(...valArr):0,
-    quoteLo: valArr.length?Math.min(...valArr):0,
-    orderCount:O.length, orderQty,
-    completedCount:completed.length, completedQty:completed.reduce((s,o)=>s+(o.qty||0),0),
-    pendingCount:pendingOrd.length, pendingQty:pendingOrd.reduce((s,o)=>s+(o.qty||0),0),
-    surveyAssigned:surv.length, surveyPending:O.length-surv.length, surveyQty,
-    prodActual:PROD_MTD.actual, prodPlanned:PROD_MTD.planned,
-    prodPending:Math.max(0,PROD_MTD.planned-PROD_MTD.actual),
-    prodAch: PROD_MTD.planned?Math.round(PROD_MTD.actual/PROD_MTD.planned*100):0,
-    dispCount:disp.length, dispQty, dispPending:O.length-disp.length,
-    instStarted:started.length, instCompleted:inst.length, instPending:O.length-inst.length, instQty,
-    instPct: O.length?Math.round(inst.length/O.length*100):0
-  };
+function _clean(v){ if(v==null) return null; var s=String(v).replace(/\r?\n/g,' ').trim().replace(/^"+/,'').replace(/"+$/,'').trim(); return (s===''||s==='·')?null:s; }
+
+/* reads the Product Master and returns products with rowId + a unique label per Material+Type */
+function getMaster(){
+  var sh=SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.MASTER_SHEET);
+  var last=Math.min(CONFIG.LAST_DATA_ROW, sh.getLastRow()), w=CONFIG.COLOUR_COL_END;
+  var head=sh.getRange(CONFIG.HEADER_ROW,1,1,w).getValues()[0], colours=[];
+  for(var c=CONFIG.COLOUR_COL_START-1;c<CONFIG.COLOUR_COL_END;c++) colours.push(_clean(head[c]));
+  var rng=sh.getRange(CONFIG.FIRST_DATA_ROW,1,last-CONFIG.FIRST_DATA_ROW+1,w).getValues();
+  var out=[], mat=null, map={'AL':'Aluminium','UPVC':'uPVC','uPVC':'uPVC'}, id=0;
+  rng.forEach(function(r){
+    var m=_clean(r[0]); if(m) mat=map[m]||m;
+    var series=_clean(r[1]), type=_clean(r[2]), range=_clean(r[3]), product=_clean(r[4]);
+    if(!series&&!product) return;
+    var col={}; for(var i=0;i<colours.length;i++){var fg=_clean(r[CONFIG.COLOUR_COL_START-1+i]); if(fg) col[colours[i]]=fg;}
+    out.push({rowId:id++, material:mat, type:type, series:series, range:range, product:product,
+              glass:_clean(r[5]), cost:_clean(r[6]), csWidth:_clean(r[7]), csHeight:_clean(r[8]), colours:col});
+  });
+  // unique label within (material,type)
+  var grp={}; out.forEach(function(r){var k=r.material+'|'+r.type;(grp[k]=grp[k]||[]).push(r);});
+  Object.keys(grp).forEach(function(k){
+    var rows=grp[k], pc={}, psc={};
+    rows.forEach(function(r){pc[r.product]=(pc[r.product]||0)+1;});
+    rows.forEach(function(r){var kk=r.product+'|'+r.series; psc[kk]=(psc[kk]||0)+1;});
+    rows.forEach(function(r){
+      var lab=r.product;
+      if(pc[r.product]>1){ lab+=' · '+r.series; if(psc[r.product+'|'+r.series]>1) lab+=' · '+r.glass; }
+      r.plabel=lab;
+    });
+  });
+  return JSON.stringify({products:out});
 }
 
-/* ============ RENDER SECTIONS ============ */
-function renderKpis(d){
-  // SECTION 1 — top 6
-  document.getElementById('topKpis').innerHTML=[
-    kpi({lbl:'Quotations',val:num(d.quoteCount),ic:IC.quote,icc:'',sub:'unique quote numbers',cls:'big'}),
-    kpi({lbl:'Orders',val:num(d.orderCount),ic:IC.order,icc:'',sub:num(d.orderQty)+' units ordered',cls:'big'}),
-    kpi({lbl:'Survey Assigned',val:num(d.surveyAssigned),ic:IC.survey,icc:'grn',sub:d.surveyPending+' pending',cls:'big green'}),
-    kpi({lbl:'Production Qty',val:num(d.prodActual),ic:IC.prod,icc:'gold',sub:'MTD actual units',cls:'big g'}),
-    kpi({lbl:'Dispatch',val:num(d.dispCount),ic:IC.disp,icc:'amb',sub:num(d.dispQty)+' units',cls:'big amber'}),
-    kpi({lbl:'Installations',val:num(d.instCompleted),ic:IC.install,icc:'grn',sub:d.instPct+'% complete',cls:'big green'})
-  ].join('');
+/* payload = { requester fields..., items:[ {rowId or full fields, colour, qty}, ... ] } */
+function submitRequest(payload){
+  var d = (typeof payload==='string')?JSON.parse(payload):payload;
+  if(!d.items || !d.items.length) return JSON.stringify({ok:false,error:'No product lines submitted'});
+  // server validation
+  var e=[];
+  if(!d.empName) e.push('Employee name');
+  if(!/^[6-9]\d{9}$/.test(String(d.contact||''))) e.push('Valid contact number');
+  if(!d.state) e.push('State'); if(!d.address) e.push('Address');
+  d.items.forEach(function(it,i){ if(!it.fgCode) e.push('FG for line '+(i+1)); if(!(Number(it.qty)>=1)) e.push('Qty for line '+(i+1)); });
+  if(e.length) return JSON.stringify({ok:false,error:'Missing/invalid: '+e.join(', ')});
 
-  // SECTION 2 — quotation
-  document.getElementById('quoteTag').textContent=d.quoteRows+' quote lines';
-  document.getElementById('quoteKpis').innerHTML=[
-    kpi({lbl:'Total Quotations',val:num(d.quoteCount),ic:IC.quote,sm:1}),
-    kpi({lbl:'Window Quantity',val:num(d.quoteQty),ic:IC.box,sm:1}),
-    kpi({lbl:'Total Value',val:inr(d.quoteVal),ic:IC.money,icc:'gold',sm:1,cls:'g'}),
-    kpi({lbl:'Average Value',val:inr(d.quoteAvg),ic:IC.money,sm:1}),
-    kpi({lbl:'Highest Quote',val:inr(d.quoteHi),ic:IC.money,icc:'grn',sm:1,cls:'green'}),
-    kpi({lbl:'Lowest Quote',val:inr(d.quoteLo),ic:IC.money,icc:'amb',sm:1,cls:'amber'})
-  ].join('');
-
-  // SECTION 3 — order
-  document.getElementById('orderTag').textContent=d.orderCount+' orders';
-  document.getElementById('orderKpis').innerHTML=[
-    kpi({lbl:'Total Orders',val:num(d.orderCount),ic:IC.order,sm:1}),
-    kpi({lbl:'Total Quantity',val:num(d.orderQty),ic:IC.box,sm:1}),
-    kpi({lbl:'Total Order Value',na:'—',ic:IC.money,icc:'amb',sm:1,cls:'amber',pend:1}),
-    kpi({lbl:'Average Order Value',na:'—',ic:IC.money,sm:1,pend:1})
-  ].join('');
-  document.getElementById('orderKpis2').innerHTML=[
-    kpi({lbl:'Completed Orders',val:num(d.completedCount),ic:IC.install,icc:'grn',sm:1,cls:'green'}),
-    kpi({lbl:'Completed Qty',val:num(d.completedQty),ic:IC.box,icc:'grn',sm:1,cls:'green'}),
-    kpi({lbl:'Completed Value',na:'—',sm:1,cls:'green',pend:1}),
-    kpi({lbl:'Pending Orders',val:num(d.pendingCount),ic:IC.clock,icc:'amb',sm:1,cls:'amber'}),
-    kpi({lbl:'Pending Qty',val:num(d.pendingQty),ic:IC.box,icc:'amb',sm:1,cls:'amber'}),
-    kpi({lbl:'Pending Value',na:'—',sm:1,cls:'amber',pend:1})
-  ].join('');
-
-  // SECTION 4 — survey
-  const surveyPct=d.orderCount?Math.round(d.surveyAssigned/d.orderCount*100):0;
-  document.getElementById('surveyKpis').innerHTML=[
-    kpi({lbl:'Survey Assigned',val:num(d.surveyAssigned),ic:IC.survey,sm:1}),
-    kpi({lbl:'Survey Completed',val:num(d.surveyAssigned),ic:IC.install,icc:'grn',sm:1,cls:'green'}),
-    kpi({lbl:'Pending Survey',val:num(d.surveyPending),ic:IC.clock,icc:'amb',sm:1,cls:'amber'}),
-    kpi({lbl:'Survey Quantity',val:num(d.surveyQty),ic:IC.box,sm:1}),
-    kpi({lbl:'Survey Value',na:'—',ic:IC.money,sm:1,pend:1}),
-    kpi({lbl:'Completion %',val:surveyPct+'%',ic:IC.pct,icc:'grn',sm:1,cls:'green'})
-  ].join('');
-
-  // SECTION 5 — production
-  document.getElementById('prodKpis').innerHTML=[
-    kpi({lbl:'Actual Production',val:num(d.prodActual),ic:IC.prod,icc:'gold',sm:1,cls:'g'}),
-    kpi({lbl:'Planned Production',val:num(d.prodPlanned),ic:IC.box,sm:1}),
-    kpi({lbl:'Pending Quantity',val:num(d.prodPending),ic:IC.clock,icc:'amb',sm:1,cls:'amber'}),
-    kpi({lbl:'Achievement %',val:d.prodAch+'%',ic:IC.pct,icc:(d.prodAch>=80?'grn':'red'),sm:1,cls:(d.prodAch>=80?'green':'red')}),
-    kpi({lbl:'WIP Units',val:num(PROD_MTD.wip),ic:IC.box,icc:'',sm:1}),
-    kpi({lbl:'Delayed Units',val:num(PROD_MTD.delay),ic:IC.clock,icc:'red',sm:1,cls:'red'})
-  ].join('');
-
-  // SECTION 6 — dispatch
-  document.getElementById('dispatchKpis').innerHTML=[
-    kpi({lbl:'Dispatch Orders',val:num(d.dispCount),ic:IC.disp,sm:1}),
-    kpi({lbl:'Dispatch Quantity',val:num(d.dispQty),ic:IC.box,sm:1}),
-    kpi({lbl:'Dispatch Value',na:'—',ic:IC.money,icc:'amb',sm:1,cls:'amber',pend:1}),
-    kpi({lbl:'Avg Dispatch Value',na:'—',ic:IC.money,sm:1,pend:1}),
-    kpi({lbl:'Pending Dispatch',val:num(d.dispPending),ic:IC.clock,icc:'amb',sm:1,cls:'amber'}),
-    kpi({lbl:'Dispatch Rate',val:(d.orderCount?Math.round(d.dispCount/d.orderCount*100):0)+'%',ic:IC.pct,icc:'grn',sm:1,cls:'green'})
-  ].join('');
-
-  // SECTION 7 — installation
-  document.getElementById('installKpis').innerHTML=[
-    kpi({lbl:'Installation Started',val:num(d.instStarted),ic:IC.install,sm:1}),
-    kpi({lbl:'Installation Completed',val:num(d.instCompleted),ic:IC.install,icc:'grn',sm:1,cls:'green'}),
-    kpi({lbl:'Installation Pending',val:num(d.instPending),ic:IC.clock,icc:'amb',sm:1,cls:'amber'}),
-    kpi({lbl:'Installed Quantity',val:num(d.instQty),ic:IC.box,sm:1}),
-    kpi({lbl:'Installation Value',na:'—',ic:IC.money,sm:1,pend:1}),
-    kpi({lbl:'Completion %',val:d.instPct+'%',ic:IC.pct,icc:'grn',sm:1,cls:'green'})
-  ].join('');
-}
-
-/* ============ ALERTS ============ */
-function renderAlerts(d){
-  const items=[
-    {t:'Pending Orders',v:d.pendingCount,desc:'not yet handed over',crit:d.pendingCount>20},
-    {t:'Pending Surveys',v:d.surveyPending,desc:'awaiting survey date',crit:d.surveyPending>20},
-    {t:'Production Delays',v:PROD_MTD.delay,desc:num(PROD_MTD.reordersPending)+' re-orders pending',crit:true},
-    {t:'Pending Dispatch',v:d.dispPending,desc:'not yet dispatched',crit:d.dispPending>20},
-    {t:'Pending Installation',v:d.instPending,desc:'not yet installed',crit:d.instPending>20}
-  ];
-  document.getElementById('alerts').innerHTML=items.map(a=>
-    '<div class="alert'+(a.crit?' crit':'')+'"><div class="aHd"><div class="aic">'
-    +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>'
-    +'</div><div class="at">'+a.t+'</div></div><div class="aVal">'+num(a.v)+'</div><div class="aDesc">'+a.desc+'</div></div>'
-  ).join('');
-}
-
-/* ============ CHARTS ============ */
-let charts={};
-Chart.defaults.font.family="'Inter',sans-serif";
-Chart.defaults.font.size=11.5;
-Chart.defaults.color='#64708A';
-const GRID={color:'#EEF2F8'};
-function destroy(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } }
-
-function renderCharts(d){
-  // Monthly revenue trend (quotation value by month)
-  const revMap={};
-  d.Q.forEach(q=>{ if(q.m&&realVal(q.val)){ revMap[q.m]=(revMap[q.m]||0)+q.val; }});
-  const revLabels=Object.keys(revMap).sort((a,b)=>monKey(a)-monKey(b));
-  destroy('rev');
-  charts.rev=new Chart(document.getElementById('revChart'),{
-    type:'line',
-    data:{labels:revLabels,datasets:[{label:'Quotation Value',data:revLabels.map(l=>revMap[l]),
-      borderColor:'#002060',backgroundColor:(c)=>{const g=c.chart.ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,'rgba(0,32,96,.22)');g.addColorStop(1,'rgba(0,32,96,0)');return g;},
-      fill:true,tension:.35,borderWidth:2.5,pointBackgroundColor:'#FFC000',pointBorderColor:'#002060',pointRadius:4,pointHoverRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>inr(c.raw)}}},
-      scales:{y:{grid:GRID,ticks:{callback:v=>inr(v)}},x:{grid:{display:false}}}}
-  });
-
-  // Product distribution (orders by product)
-  const pMap={};
-  d.O.forEach(o=>{ const p=o.prod||'Other'; pMap[p]=(pMap[p]||0)+1; });
-  const pLabels=Object.keys(pMap).sort((a,b)=>pMap[b]-pMap[a]);
-  destroy('prod');
-  charts.prod=new Chart(document.getElementById('productChart'),{
-    type:'bar',
-    data:{labels:pLabels,datasets:[{data:pLabels.map(l=>pMap[l]),
-      backgroundColor:'#2D6BD4',borderRadius:6,maxBarThickness:46}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{grid:GRID,beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false},ticks:{maxRotation:35,minRotation:0,font:{size:10}}}}}
-  });
-
-  // Zone distribution (quote value + order count)
-  const zV={},zO={};
-  d.Q.forEach(q=>{ if(q.z){ zV[q.z]=(zV[q.z]||0)+(realVal(q.val)?q.val:0); }});
-  d.O.forEach(o=>{ if(o.z){ zO[o.z]=(zO[o.z]||0)+1; }});
-  const zones=uniq([...Object.keys(zV),...Object.keys(zO)]);
-  destroy('zone');
-  charts.zone=new Chart(document.getElementById('zoneChart'),{
-    type:'bar',
-    data:{labels:zones,datasets:[
-      {label:'Quotation Value (₹)',data:zones.map(z=>zV[z]||0),backgroundColor:'#002060',borderRadius:6,yAxisID:'y',maxBarThickness:40},
-      {label:'Orders',data:zones.map(z=>zO[z]||0),backgroundColor:'#FFC000',borderRadius:6,yAxisID:'y1',maxBarThickness:40}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:14,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y'?'Value: '+inr(c.raw):'Orders: '+c.raw}}},
-      scales:{y:{grid:GRID,position:'left',ticks:{callback:v=>inr(v)}},y1:{grid:{display:false},position:'right',beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}
-  });
-
-  // Production trend (daily Alu vs UPVC)
-  destroy('ptrend');
-  charts.ptrend=new Chart(document.getElementById('prodTrendChart'),{
-    type:'line',
-    data:{labels:PROD_DAILY.map(r=>r[0]),datasets:[
-      {label:'Aluminium',data:PROD_DAILY.map(r=>r[1]),borderColor:'#2D6BD4',backgroundColor:'transparent',tension:.3,borderWidth:2,pointRadius:0,pointHoverRadius:4},
-      {label:'uPVC',data:PROD_DAILY.map(r=>r[2]),borderColor:'#E0A500',backgroundColor:'transparent',tension:.3,borderWidth:2,pointRadius:0,pointHoverRadius:4}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      plugins:{legend:{position:'top',labels:{boxWidth:12,padding:14}}},
-      scales:{y:{grid:GRID,beginAtZero:true},x:{grid:{display:false},ticks:{maxTicksLimit:12,font:{size:9}}}}}
-  });
-
-  // Delay analysis (production reasons)
-  const dr=PROD_MTD.reasons; const drK=Object.keys(dr).filter(k=>dr[k]>0);
-  destroy('delay');
-  charts.delay=new Chart(document.getElementById('delayChart'),{
-    type:'doughnut',
-    data:{labels:drK,datasets:[{data:drK.map(k=>dr[k]),
-      backgroundColor:['#E0454A','#E8A33D','#FFC000','#2D6BD4','#6B4FD4','#1F9D6B'],borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
-      plugins:{legend:{position:'right',labels:{boxWidth:12,padding:11,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>c.label+': '+c.raw+' units'}}}}
-  });
-
-  // Dispatch performance (dispatched qty by month)
-  const dispM={};
-  d.O.filter(isDispatched).forEach(o=>{ const m=odMonth(o.dd)||odMonth(o.od)||'Other'; dispM[m]=(dispM[m]||0)+(o.qty||0); });
-  const dmK=Object.keys(dispM).filter(k=>k!=='Other').sort((a,b)=>monKey(a)-monKey(b));
-  if(dispM['Other']) dmK.push('Other');
-  destroy('disp');
-  charts.disp=new Chart(document.getElementById('dispatchChart'),{
-    type:'bar',
-    data:{labels:dmK,datasets:[{label:'Dispatched Units',data:dmK.map(k=>dispM[k]),
-      backgroundColor:'#1F9D6B',borderRadius:6,maxBarThickness:40}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{grid:GRID,beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
-  });
-
-  // Install ring
-  destroy('ring');
-  const done=d.instCompleted, prog=Math.max(0,d.instStarted-d.instCompleted), pend=d.instPending;
-  charts.ring=new Chart(document.getElementById('installRing'),{
-    type:'doughnut',
-    data:{labels:['Completed','In Progress','Pending'],datasets:[{data:[done,prog,pend],
-      backgroundColor:['#1F9D6B','#E8A33D','#E2E8F2'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'76%',plugins:{legend:{display:false},tooltip:{enabled:true}}}
-  });
-  document.getElementById('installRingPct').textContent=d.instPct+'%';
-  document.getElementById('installLegend').innerHTML=[
-    {c:'#1F9D6B',t:'Completed',v:done},{c:'#E8A33D',t:'In Progress',v:prog},{c:'#E2E8F2',t:'Pending',v:pend}
-  ].map(x=>'<div class="rli"><span class="sw" style="background:'+x.c+'"></span><span class="rt">'+x.t+'<b>'+num(x.v)+'</b></span></div>').join('');
-
-  // Funnel
-  const steps=[
-    {n:'Quotations',v:d.quoteCount,c:'#2D6BD4'},
-    {n:'Orders',v:d.orderCount,c:'#6B4FD4'},
-    {n:'Surveyed',v:d.surveyAssigned,c:'#E0A500'},
-    {n:'Dispatched',v:d.dispCount,c:'#E8A33D'},
-    {n:'Installed',v:d.instCompleted,c:'#1F9D6B'}
-  ];
-  const mx=Math.max(...steps.map(s=>s.v),1);
-  document.getElementById('funnel').innerHTML=steps.map((s,i)=>{
-    const w=Math.max(14,Math.round(s.v/mx*100));
-    const drop=i>0&&steps[i-1].v>0?Math.round(s.v/steps[i-1].v*100)+'% of prev':'';
-    return '<div class="fstep"><div class="fbar" style="width:'+w+'%;background:'+s.c+'"><span class="fn">'+s.n+'</span><span class="fv">'+num(s.v)+'</span></div>'
-      +(drop?'<div class="fdrop">'+drop+'</div>':'')+'</div>';
-  }).join('');
-}
-
-/* ============ TABLE ============ */
-let tableTab='orders';
-function statusPill(o){
-  if(isComplete(o)) return '<span class="pill ok">Completed</span>';
-  if(/handover by dealer/i.test(o.st||'')) return '<span class="pill dn">Dealer handover</span>';
-  if(isDispatched(o)) return '<span class="pill wait">Dispatched</span>';
-  if(isSurveyed(o)) return '<span class="pill wait">Surveyed</span>';
-  return '<span class="pill no">In pipeline</span>';
-}
-function renderTable(d){
-  const head=document.getElementById('tblHead'), body=document.getElementById('tblBody');
-  if(tableTab==='orders'){
-    head.innerHTML='<tr><th>#</th><th>Customer</th><th>Zone</th><th>City</th><th>Product</th><th class="rt-num">Qty</th><th>Partner</th><th>Salesperson</th><th>Order Date</th><th>Survey</th><th>Dispatch</th><th>Install</th><th>Status</th></tr>';
-    const rows=d.O;
-    document.getElementById('tblCount').textContent=rows.length+' orders';
-    body.innerHTML=rows.length?rows.map(o=>'<tr>'
-      +'<td class="rt-num">'+o.id+'</td><td>'+(o.cust||'—')+'</td><td>'+(o.z||'—')+'</td><td>'+(o.city||'—')+'</td>'
-      +'<td>'+(o.prod||'—')+'</td><td class="rt-num">'+num(o.qty)+'</td><td>'+(o.partner||'—')+'</td><td>'+(o.sp||'—')+'</td>'
-      +'<td>'+(o.od||'—')+'</td><td>'+(isSurveyed(o)?o.sd:'<span style="color:#C0392B">—</span>')+'</td>'
-      +'<td>'+(isDispatched(o)?(realDate(o.dd)?o.dd:'✓'):'—')+'</td>'
-      +'<td>'+(isInstalled(o)?'✓':'—')+'</td><td>'+statusPill(o)+'</td></tr>').join(''):'<tr><td colspan="13" class="empty">No matching records</td></tr>';
-  }else{
-    head.innerHTML='<tr><th>Quote No</th><th>Project / Customer</th><th>Segment</th><th>Material</th><th>Zone</th><th>City</th><th>Salesperson</th><th>Month</th><th class="rt-num">Qty</th><th class="rt-num">Value</th><th>Status</th></tr>';
-    const rows=d.Q;
-    document.getElementById('tblCount').textContent=rows.length+' quote lines';
-    body.innerHTML=rows.length?rows.map(q=>'<tr>'
-      +'<td class="rt-num">'+(q.q||'—')+'</td><td>'+(q.p||'—')+'</td><td>'+(q.seg||'—')+'</td><td>'+(q.mat||'—')+'</td>'
-      +'<td>'+(q.z||'—')+'</td><td>'+(q.city||'—')+'</td><td>'+(q.sp||'—')+'</td><td>'+(q.m||'—')+'</td>'
-      +'<td class="rt-num">'+num(q.qty)+'</td><td class="rt-num">'+(realVal(q.val)?inr(q.val):'—')+'</td>'
-      +'<td>'+(q.stage==='WON'?'<span class="pill ok">Won</span>':(q.st==='NTQ'?'<span class="pill no">NTQ</span>':'<span class="pill wait">'+(q.st||'—')+'</span>'))+'</td></tr>').join(''):'<tr><td colspan="11" class="empty">No matching records</td></tr>';
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var sh=ss.getSheetByName(CONFIG.RESPONSE_SHEET)||ss.insertSheet(CONFIG.RESPONSE_SHEET);
+  if(sh.getLastRow()===0){
+    sh.appendRow(COLUMN_HEADERS.map(function(c){return c[0];}));
+    sh.getRange(1,1,1,COLUMN_HEADERS.length).setFontWeight('bold').setBackground('#002060').setFontColor('#fff');
+    sh.setFrozenRows(1);
   }
-}
+  var now=new Date(), p=function(n){return ('0'+n).slice(-2);};
+  var rid='SR-'+now.getFullYear()+p(now.getMonth()+1)+p(now.getDate())+'-'+String(sh.getLastRow()).padStart(4,'0');
+  var reqDate=Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd MMM yyyy');
 
-/* ============ MAIN RENDER ============ */
-function render(){
-  const d=compute();
-  renderFlow(d); renderKpis(d); renderCharts(d); renderAlerts(d); renderTable(d);
-  // active filter note
-  const active=Object.entries(F).filter(([k,v])=>v&&k!=='q').map(([k,v])=>v);
-  const note=document.getElementById('activeNote');
-  if(active.length||F.q){ note.style.display='block'; note.textContent='● Filtered: '+[...(F.q?['"'+F.q+'"']:[]),...active].join(' · '); }
-  else note.style.display='none';
-}
-
-/* ============ EVENTS ============ */
-function bind(){
-  const map={fMonth:'month',fZone:'zone',fProduct:'product',fSeg:'seg',fPartner:'partner',fSp:'sp',fCity:'city',fStatus:'status'};
-  Object.entries(map).forEach(([id,key])=>{
-    document.getElementById(id).addEventListener('change',e=>{ F[key]=e.target.value; render(); });
+  d.items.forEach(function(it,idx){
+    var record={requestId:rid, requestDate:reqDate, empName:d.empName, dealer:d.dealer, receiver:d.receiver,
+      contact:d.contact, state:d.state, address:d.address, soNumber:d.soNumber||'',
+      lineNo:idx+1, material:it.material, type:it.type, series:it.series, range:it.range,
+      product:it.product, glass:it.glass, colour:it.colour, fgCode:it.fgCode, cost:it.cost,
+      csWidth:it.csWidth, csHeight:it.csHeight, qty:it.qty};
+    sh.appendRow(COLUMN_HEADERS.map(function(c){ return record[c[1]]!==undefined?record[c[1]]:''; }));
   });
-  let t;
-  document.getElementById('globalSearch').addEventListener('input',e=>{ clearTimeout(t); t=setTimeout(()=>{ F.q=e.target.value.trim(); render(); },180); });
-  document.getElementById('resetBtn').addEventListener('click',()=>{
-    Object.keys(F).forEach(k=>F[k]='');
-    document.querySelectorAll('.filters select').forEach(s=>s.value='');
-    document.getElementById('globalSearch').value='';
-    render();
-  });
-  document.querySelectorAll('.ttab').forEach(b=>b.addEventListener('click',()=>{
-    document.querySelectorAll('.ttab').forEach(x=>x.classList.remove('on'));
-    b.classList.add('on'); tableTab=b.dataset.tab; renderTable(compute());
-  }));
+
+  _notify(rid, d, reqDate);
+  return JSON.stringify({ok:true, requestId:rid, rows:d.items.length});
 }
 
-/* ============ INIT ============ */
-document.getElementById('snapTxt').textContent='Snapshot · '+QUOTATIONS.length+' quotes · '+ORDERS.length+' orders';
-document.getElementById('footMeta').innerHTML='Quotations: <b>'+QUOTATIONS.length+'</b> · Orders: <b>'+ORDERS.length+'</b> · Production MTD actual: <b>'+num(PROD_MTD.actual)+'</b> units · Built for management review';
-populateFilters();
-bind();
-render();
-
-</script>
-</body>
-</html>
+function _notify(rid,d,reqDate){
+  var tr=d.items.map(function(it,i){
+    return '<tr><td style="padding:6px 10px;border-bottom:1px solid #eee">'+(i+1)+'</td>'+
+      '<td style="padding:6px 10px;border-bottom:1px solid #eee">'+it.material+' · '+it.series+' · '+it.product+'</td>'+
+      '<td style="padding:6px 10px;border-bottom:1px solid #eee">'+it.colour+'</td>'+
+      '<td style="padding:6px 10px;border-bottom:1px solid #eee;font-weight:600">'+it.fgCode+'</td>'+
+      '<td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">'+it.qty+'</td></tr>';
+  }).join('');
+  var html='<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;border:1px solid #E2E7F1;border-radius:14px;overflow:hidden">'+
+    '<div style="background:#002060;color:#fff;padding:16px 20px;border-bottom:3px solid #FFC000">'+
+    '<div style="font-size:12px;letter-spacing:.12em;color:#FFC000">NEW SAMPLE REQUEST · '+d.items.length+' PRODUCT(S)</div>'+
+    '<div style="font-size:19px;font-weight:700">'+rid+'</div></div>'+
+    '<div style="padding:12px 20px;font-size:13px;color:#14203B">'+
+      '<b>'+d.empName+'</b> · Dealer '+d.dealer+' · '+d.state+'<br>'+
+      'Receiver: '+d.receiver+' · '+d.contact+'<br>'+d.address+(d.soNumber?(' · SO '+d.soNumber):'')+'</div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:12.5px">'+
+      '<tr style="background:#F7F9FC;color:#66708A"><th style="padding:6px 10px;text-align:left">#</th>'+
+      '<th style="padding:6px 10px;text-align:left">Product</th><th style="padding:6px 10px;text-align:left">Colour</th>'+
+      '<th style="padding:6px 10px;text-align:left">FG Code</th><th style="padding:6px 10px;text-align:right">Qty</th></tr>'+tr+'</table>'+
+    '<div style="padding:12px 20px;font-size:11px;color:#98A1B8">Auto-generated · '+CONFIG.ORG_NAME+'</div></div>';
+  MailApp.sendEmail({to:CONFIG.SAMPLE_TEAM_EMAIL, subject:'New Sample Request '+rid+' — '+d.empName+' ('+d.items.length+' item/s)', htmlBody:html});
+}
